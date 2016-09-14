@@ -33,7 +33,7 @@ import java.util.Map;
  *     <li>Delete: delete specific item by index</li>
  * </ol>
  *
- * @version 0.9.1 (2016-09-14)
+ * @version 0.9.2 (2016-09-14)
  * @author  Tzu-ting, NCTU Fintech Center
  */
 public class DbAdapter {
@@ -111,7 +111,7 @@ public class DbAdapter {
      * Get all items
      * @return all items, or null when connection is failed
      */
-    public JSONArray Get() {
+    public JSONArray get() {
         try {
             String response = sendRequest("GET", "?format=json", HttpURLConnection.HTTP_OK, true);
             return new JSONArray(response);
@@ -126,7 +126,7 @@ public class DbAdapter {
      * @param index item id
      * @return specified item, or null when connection is failed
      */
-    public JSONObject Get(int index) {
+    public JSONObject get(int index) {
         try {
             String response = sendRequest("GET", index + "?format=json", HttpURLConnection.HTTP_OK, true);
             return new JSONObject(response);
@@ -141,7 +141,7 @@ public class DbAdapter {
      * @param filters filter to select items
      * @return specified items, or null when connection is failed
      */
-    public JSONArray Get(String... filters)
+    public JSONArray get(String... filters)
     {
         try {
             // parse filters
@@ -171,7 +171,7 @@ public class DbAdapter {
      * @param item object to upload
      * @return add success or not
      */
-    public boolean Add(Map<String, String> item) {
+    public boolean add(Map<String, String> item) {
         try {
             String encodedData = encodeParam(item);
             sendRequest("POST", "?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_CREATED, false);
@@ -187,7 +187,7 @@ public class DbAdapter {
      * @param item object to upload
      * @return add success or not
      */
-    public boolean Add(JSONObject item) {
+    public boolean add(JSONObject item) {
         try {
             sendRequest("POST", "?format=json", ContentType.Json, item.toString(), HttpURLConnection.HTTP_CREATED, false);
             return true;
@@ -203,7 +203,7 @@ public class DbAdapter {
      * @param changes filed and value pairs to be updated in item
      * @return update success or not
      */
-    public boolean Update(int index, Map<String, String> changes) {
+    public boolean update(int index, Map<String, String> changes) {
         try {
             String encodedData = encodeParam(changes);
             sendRequest("PUT", index + "?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_OK, false);
@@ -220,7 +220,7 @@ public class DbAdapter {
      * @param changes filed and value pairs to be updated in item
      * @return update success or not
      */
-    public boolean Update(int index, JSONObject changes) {
+    public boolean update(int index, JSONObject changes) {
         try {
             sendRequest("PUT", index + "?format=json", ContentType.Json, changes.toString(), HttpURLConnection.HTTP_OK, false);
             return true;
@@ -235,7 +235,7 @@ public class DbAdapter {
      * @param index index of item to be deleted
      * @return delete success or not
      */
-    public boolean Delete(int index)
+    public boolean delete(int index)
     {
         try {
             sendRequest("DELETE", index + "?format=json", HttpURLConnection.HTTP_NO_CONTENT, false);
