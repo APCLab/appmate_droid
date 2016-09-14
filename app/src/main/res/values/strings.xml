@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">AppMateDemo</string>
+
+    <string name="index">index</string>
+    <string name="msg">message</string>
+
+    <string name="get_all">get all</string>
+    <string name="get_one">get by index</string>
+    <string name="get_f">get by filter</string>
+
+    <string name="add">add</string>
+    <string name="update">update</string>
+    <string name="del">delete</string>
+
+</resources>
