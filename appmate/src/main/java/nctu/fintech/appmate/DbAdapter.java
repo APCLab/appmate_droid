@@ -42,8 +42,7 @@ public class DbAdapter {
     //  Constants
     //
     //*******************************************************
-    private class ContentType
-    {
+    private class ContentType {
         public static final String Form = "application/x-www-form-urlencoded";
         public static final String Json = "application/json";
     }
@@ -53,7 +52,8 @@ public class DbAdapter {
             ContentType.Json,
             "N/A",
     })
-    private @interface ContentTypeStr {}
+    private @interface ContentTypeStr {
+    }
 
     @StringDef({
             "GET",
@@ -61,7 +61,8 @@ public class DbAdapter {
             "PUT",
             "DELETE"
     })
-    private @interface HttpMethodStr {}
+    private @interface HttpMethodStr {
+    }
 
     private static final String ENCODE = "utf-8";
 
@@ -77,8 +78,10 @@ public class DbAdapter {
     //  Constructor
     //
     //*******************************************************
+
     /**
      * Create a connection to database
+     *
      * @param host  host name
      * @param table table name
      */
@@ -89,26 +92,25 @@ public class DbAdapter {
 
     /**
      * Create a connection to database, with authentic
-     * @param host host name
+     *
+     * @param host     host name
      * @param username user name
      * @param password user password
-     * @param table table name
+     * @param table    table name
      */
     public DbAdapter(@NonNull String host, @NonNull String table, @NonNull String username, @NonNull String password) {
         _base_url = String.format("http://%s/api/%s/", host, table);
-
-        String auth_string = username + ":" + password;
-        String auth_encoded = Base64.encodeToString(auth_string.getBytes(), Base64.DEFAULT);
-        _auth = "Basic " + auth_encoded;
+        _auth = generateAuthString(username, password);
     }
-
 
     //*******************************************************
     //  Public members
     //
     //*******************************************************
+
     /**
      * Get all items
+     *
      * @return all items, or null when connection is failed
      */
     public JSONArray get() {
@@ -122,7 +124,8 @@ public class DbAdapter {
     }
 
     /**
-     *  Get specific item by index
+     * Get specific item by index
+     *
      * @param index item id
      * @return specified item, or null when connection is failed
      */
@@ -138,18 +141,17 @@ public class DbAdapter {
 
     /**
      * Get specific items by filter
+     *
      * @param filters filter to select items
      * @return specified items, or null when connection is failed
      */
-    public JSONArray get(String... filters)
-    {
+    public JSONArray get(String... filters) {
         try {
             // parse filters
             HashMap<String, String> params = new HashMap<>();
             for (String this_filter : filters) {
                 HashMap<String, String> this_params = parseFilter(this_filter);
-                if (this_filter == null)
-                {
+                if (this_filter == null) {
                     continue;
                 }
                 params.putAll(this_params);
@@ -168,6 +170,7 @@ public class DbAdapter {
 
     /**
      * Add a item
+     *
      * @param item object to upload
      * @return add success or not
      */
@@ -184,6 +187,7 @@ public class DbAdapter {
 
     /**
      * Add a item
+     *
      * @param item object to upload
      * @return add success or not
      */
@@ -199,7 +203,8 @@ public class DbAdapter {
 
     /**
      * Update a item
-     * @param index index of item which is expected to be updated
+     *
+     * @param index   index of item which is expected to be updated
      * @param changes filed and value pairs to be updated in item
      * @return update success or not
      */
@@ -216,7 +221,8 @@ public class DbAdapter {
 
     /**
      * Update a item
-     * @param index index of item to be updated
+     *
+     * @param index   index of item to be updated
      * @param changes filed and value pairs to be updated in item
      * @return update success or not
      */
@@ -232,11 +238,11 @@ public class DbAdapter {
 
     /**
      * Delete a item
+     *
      * @param index index of item to be deleted
      * @return delete success or not
      */
-    public boolean delete(int index)
-    {
+    public boolean delete(int index) {
         try {
             sendRequest("DELETE", index + "?format=json", HttpURLConnection.HTTP_NO_CONTENT, false);
             return true;
@@ -246,13 +252,32 @@ public class DbAdapter {
         }
     }
 
+    //*******************************************************
+    //  Internal members
+    //
+    //*******************************************************
+
+    /**
+     * Generate authentication string
+     *
+     * @param username user name to login
+     * @param password password to login
+     * @return HTTP header authentication sting
+     */
+    static String generateAuthString(@NonNull String username, @NonNull String password) {
+        String auth_string = username + ":" + password;
+        String auth_encoded = Base64.encodeToString(auth_string.getBytes(), Base64.DEFAULT);
+        return "Basic " + auth_encoded;
+    }
 
     //*******************************************************
     //  Private members
     //
     //*******************************************************
+
     /**
      * parse filter strings
+     *
      * @param filter filter string to be parsed
      * @return field-value pairs if success, or null
      * @throws UnsupportedEncodingException
@@ -260,8 +285,7 @@ public class DbAdapter {
     @Nullable
     private HashMap<String, String> parseFilter(String filter) throws UnsupportedEncodingException {
         String[] pairs = filter.split("&");
-        if (pairs.length == 0)
-        {
+        if (pairs.length == 0) {
             return null;
         }
 
@@ -274,11 +298,12 @@ public class DbAdapter {
             params.put(dat[0], dat[1]);
         }
 
-        return  params;
+        return params;
     }
 
     /**
      * encode parameter set
+     *
      * @param param_set parameter set
      * @return encoded string
      */
@@ -287,8 +312,7 @@ public class DbAdapter {
         StringBuilder params = new StringBuilder();
         Boolean isFirst = true;
         for (Map.Entry<String, String> pair : param_set.entrySet()) {
-            if (!isFirst)
-            {
+            if (!isFirst) {
                 params.append("&");
             }
 
@@ -298,15 +322,16 @@ public class DbAdapter {
 
             isFirst = false;
         }
-        return  params.toString();
+        return params.toString();
     }
 
     /**
      * (kernel function) proceed a connection WITHOUT output stream, and handle download stream
-     * @param method request method
-     * @param path resource path
+     *
+     * @param method            request method
+     * @param path              resource path
      * @param expected_response expected HTTP response code
-     * @param shouldGetResponse  to retrieve response content or not
+     * @param shouldGetResponse to retrieve response content or not
      * @return response content if requested, or null
      * @throws IOException
      */
@@ -317,11 +342,12 @@ public class DbAdapter {
 
     /**
      * (kernel function) proceed the connection WITH output stream, and handle download stream
-     * @param method request method
-     * @param path resource path
-     * @param output_data data to upload if exist, or null
+     *
+     * @param method            request method
+     * @param path              resource path
+     * @param output_data       data to upload if exist, or null
      * @param expected_response expected HTTP response code
-     * @param shouldGetResponse  to retrieve response content or not
+     * @param shouldGetResponse to retrieve response content or not
      * @return response content if requested, or null
      * @throws IOException
      */
@@ -336,8 +362,7 @@ public class DbAdapter {
         con.setRequestMethod(method);
 
         // authorize
-        if (_auth != null)
-        {
+        if (_auth != null) {
             con.setRequestProperty("Authorization", _auth);
         }
 
@@ -353,8 +378,7 @@ public class DbAdapter {
 
         // check response code
         int code = con.getResponseCode();
-        if (code != expected_response)
-        {
+        if (code != expected_response) {
             throw new IllegalArgumentException("Unexpected response code: " + code);
         }
 
