@@ -23,6 +23,7 @@ import java.util.Map;
 /**
  * SQL connect, client side
  *
+ * <p>
  * Implemented features:
  * <ol>
  *     <li>Get: get all</li>
@@ -32,6 +33,7 @@ import java.util.Map;
  *     <li>Update: update specific item by index</li>
  *     <li>Delete: delete specific item by index</li>
  * </ol>
+ * </p>
  *
  * @version 0.9.2 (2016-09-14)
  * @author  Tzu-ting, NCTU Fintech Center
@@ -249,6 +251,25 @@ public class DbAdapter {
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * get object by URL
+     * <p>
+     * <strong>NOTICE</strong>
+     * This method currently run WITHOUT any anti-foolish procedure. Please DO NOT use this
+     *
+     * @param url request url
+     * @return retrieved object, or null when connection failed
+     */
+    public JSONObject getByUrl(String url) {
+        try {
+            String response = sendRequest("GET", url, HttpURLConnection.HTTP_OK, true);
+            return new JSONObject(response);
+        } catch (Exception e) {
+            Log.e(this.getClass().getName(), e.getMessage());
+            return null;
         }
     }
 
