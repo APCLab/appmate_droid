@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
             class Task extends AsyncTask<Void, Void, JSONArray> {
                 @Override
                 protected JSONArray doInBackground(Void... params) {
-                    return _adapter.Get();
+                    return _adapter.get();
                 }
 
                 @Override
