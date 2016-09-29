@@ -1,8 +1,13 @@
+[^kitkat]: https://developer.android.com/about/versions/android-4.4.html
 [^1]: https://github.com/APCLab/appmate
 [^2]: https://github.com/APCLab/AppMateClient/releases
 # Appmate client & demo
 
 An API wrapper for [appmate][^1] and a demo app.
+
+## Requirement
+
+API Level 19 (Android 4.4 [KITKAT][^kitkat])
 
 ## Usage
 
