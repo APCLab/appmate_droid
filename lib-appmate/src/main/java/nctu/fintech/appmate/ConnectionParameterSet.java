@@ -11,9 +11,9 @@ import java.net.URL;
 import java.util.Map;
 
 /**
- * Connection parameters
+ * Connection parameters set
  */
-final class ConnParam {
+final class ConnectionParameterSet {
 
     final String host;
     final String user;
@@ -23,12 +23,12 @@ final class ConnParam {
     private final String _auth;
 
     /**
-     * Create parameter set of connection to specific database
+     * Create parameter set of connection parameter to specific database
      *
      * @param hostStr host domain and port number. i.e. {@code db.example.com}, {@code db.example.com:8000}, {@code user:passwd@example.com}
      * @throws MalformedResourceException on host domain info not found
      */
-    ConnParam(String hostStr) {
+    ConnectionParameterSet(String hostStr) {
         Map<String, String> val = resolveHost(hostStr);
         host = val.get("host");
 
@@ -45,7 +45,7 @@ final class ConnParam {
     }
 
     /**
-     * Create parameter set of authenticated connection to specific database
+     * Create parameter set of authenticated connection parameter to specific database
      *
      * @param hostStr  host domain and port number, SHOULD NOT contain username/password information
      * @param username username to login
@@ -53,7 +53,7 @@ final class ConnParam {
      * @throws MalformedResourceException on host domain info not found
      * @throws IllegalArgumentException   Username and password assignment duplicated. Occur on
      */
-    ConnParam(String hostStr, String username, String password) {
+    ConnectionParameterSet(String hostStr, String username, String password) {
         Map<String, String> val = resolveHost(hostStr);
         host = val.get("host");
 
@@ -69,17 +69,67 @@ final class ConnParam {
     }
 
     /**
-     * Create parameter set of authenticated connection to specific table
+     * Create parameter set of connection parameter to specific table
      *
      * @param base    base connection parameter set
      * @param tableNm name of table to serve
      */
-    ConnParam(ConnParam base, String tableNm) {
+    ConnectionParameterSet(ConnectionParameterSet base, String tableNm) {
         verifyTableName(tableNm);
 
         host = base.host;
         user = base.user;
         _auth = base._auth;
+        table = tableNm;
+        _baseUrl = generateURL();
+    }
+
+    /**
+     * Create parameter set of connection parameter to specific table
+     *
+     * @param hostStr host domain and port number
+     * @throws MalformedResourceException on host domain info not found
+     */
+    ConnectionParameterSet(String hostStr, String tableNm) {
+        verifyTableName(tableNm);
+
+        Map<String, String> val = resolveHost(hostStr);
+        host = val.get("host");
+
+        if (val.containsKey("_auth")) {
+            user = val.get("user");
+            _auth = generateAuthString(val.get("_auth"));
+        } else {
+            user = null;
+            _auth = null;
+        }
+
+        table = tableNm;
+        _baseUrl = generateURL();
+    }
+
+    /**
+     * Create parameter set of authenticated connection parameter to specific table
+     *
+     * @param hostStr  host domain and port number, SHOULD NOT contain username/password information
+     * @param username username to login
+     * @param password password to login
+     * @throws MalformedResourceException on host domain info not found
+     * @throws IllegalArgumentException   Username and password assignment duplicated. Occur on
+     */
+    ConnectionParameterSet(String hostStr, String username, String password, String tableNm) {
+        verifyTableName(tableNm);
+
+        Map<String, String> val = resolveHost(hostStr);
+        host = val.get("host");
+
+        if (val.containsKey("_auth")) {
+            throw new IllegalArgumentException("Duplicate username/password assigned");
+        } else {
+            user = username;
+            _auth = generateAuthString(username + ":" + password);
+        }
+
         table = tableNm;
         _baseUrl = generateURL();
     }
