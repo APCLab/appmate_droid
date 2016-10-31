@@ -35,7 +35,7 @@ import java.util.Map;
  * </ol>
  * </p>
  *
- * @version 0.9.2 (2016-09-14)
+ * @version 0.9.5 (2016-10-31)
  * @author  Tzu-ting, NCTU Fintech Center
  */
 public class DbAdapter {
@@ -61,6 +61,7 @@ public class DbAdapter {
             "GET",
             "POST",
             "PUT",
+            "PATCH",
             "DELETE"
     })
     private @interface HttpMethodStr {
@@ -213,7 +214,7 @@ public class DbAdapter {
     public boolean update(int index, Map<String, String> changes) {
         try {
             String encodedData = encodeParam(changes);
-            sendRequest("PUT", index + "?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_OK, false);
+            sendRequest("PATCH", index + "?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_OK, false);
             return true;
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
@@ -230,7 +231,7 @@ public class DbAdapter {
      */
     public boolean update(int index, JSONObject changes) {
         try {
-            sendRequest("PUT", index + "?format=json", ContentType.Json, changes.toString(), HttpURLConnection.HTTP_OK, false);
+            sendRequest("PATCH", index + "?format=json", ContentType.Json, changes.toString(), HttpURLConnection.HTTP_OK, false);
             return true;
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
