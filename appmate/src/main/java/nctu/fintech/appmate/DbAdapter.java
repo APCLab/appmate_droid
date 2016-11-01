@@ -214,7 +214,7 @@ public class DbAdapter {
     public boolean update(int index, Map<String, String> changes) {
         try {
             String encodedData = encodeParam(changes);
-            sendRequest("PATCH", index + "?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_OK, false);
+            sendRequest("PATCH", index + "/?format=json", ContentType.Form, encodedData, HttpURLConnection.HTTP_OK, false);
             return true;
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
@@ -231,7 +231,7 @@ public class DbAdapter {
      */
     public boolean update(int index, JSONObject changes) {
         try {
-            sendRequest("PATCH", index + "?format=json", ContentType.Json, changes.toString(), HttpURLConnection.HTTP_OK, false);
+            sendRequest("PATCH", index + "/?format=json", ContentType.Json, changes.toString(), HttpURLConnection.HTTP_OK, false);
             return true;
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
@@ -247,7 +247,7 @@ public class DbAdapter {
      */
     public boolean delete(int index) {
         try {
-            sendRequest("DELETE", index + "?format=json", HttpURLConnection.HTTP_NO_CONTENT, false);
+            sendRequest("DELETE", index + "/?format=json", HttpURLConnection.HTTP_NO_CONTENT, false);
             return true;
         } catch (Exception e) {
             Log.e(this.getClass().getName(), e.getMessage());
