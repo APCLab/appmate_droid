@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/app-test/app-test.iml" filepath="$PROJECT_DIR$/app-test/app-test.iml" />
       <module fileurl="file://$PROJECT_DIR$/appmate.iml" filepath="$PROJECT_DIR$/appmate.iml" />
+      <module fileurl="file://$PROJECT_DIR$/appmate_new.iml" filepath="$PROJECT_DIR$/appmate_new.iml" />
       <module fileurl="file://$PROJECT_DIR$/lib-appmate/lib-appmate.iml" filepath="$PROJECT_DIR$/lib-appmate/lib-appmate.iml" />
     </modules>
   </component>
