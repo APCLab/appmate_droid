@@ -3,9 +3,12 @@ package nctu.fintech.appmate;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.code.regexp.Pattern;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
@@ -14,14 +17,14 @@ import java.util.Map;
  * 資料庫連接物件，本型別適用於須存取多個 {@link Table} 時方便建立連線之用。
  *
  * <p>
- * Class {@link Database} represents a connection to the remote database referred by assigned host domain and handles parameters to communicate with {@code appmate} server-side api.
+ *     Class {@link Database} represents an {@code appmate} database.
  *</p>
  * <p>
- * A {@link Database} instance is not required on creating a {@link Table} instance, or creating connection.
- * It helps when multiple table is used, which let develop can create multiple {@link Table} instance with less hard-coded parameter and make less mistake.
+ *     A {@link Database} instance is not required on creating a {@link Table} instance, or creating connection.
+ *     It helps when multiple table is used, which let develop can create multiple {@link Table} instance with less hard-coded parameter and make less mistake.
  * </p>
  * <p>
- * It should be noted that a {@link Database} instance does not establish the actual network connection.
+ *     It should be noted that a {@link Database} instance does not establish the actual network connection.
  * </p>
  */
 public class Database {
@@ -35,7 +38,7 @@ public class Database {
     /**
      * database root api URL
      */
-    protected final URL _dbUrl;
+    final URL _baseUrl;
 
     //--- authentication information
 
@@ -59,7 +62,10 @@ public class Database {
      */
 
     /**
-     * indicate that use authentication or not
+     * 取得此資料庫使用授權與否。
+     * <p>
+     * Return that it use authentication or not.
+     * </p>
      *
      * @return use authentication or not
      */
@@ -68,7 +74,10 @@ public class Database {
     }
 
     /**
-     * get the username to login
+     * 取得使用者名稱。
+     * <p>
+     * Return the username.
+     * </p>
      *
      * @return username
      */
@@ -81,10 +90,9 @@ public class Database {
      */
 
     /**
-     * 建立一個 {@link Database} 實體
+     * 建立一個 {@link Database} 實體。
      * <p>
-     * <p>
-     * Create a instance {@link Database} that represents a connection to the remote database referred by {@code host}
+     * Create a {@link Database} instance which represents a connection to the remote database referred by {@code host}
      * </p>
      * <p>
      * For develop whom use this constructor, it is known that frequency request without authentication
@@ -101,7 +109,7 @@ public class Database {
         }
 
         try {
-            _dbUrl = new URL(res.get("host")+"/api/");
+            _baseUrl = generateApiRootUrl(res.get("host"));
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("illegal host domain", e);
         }
@@ -118,9 +126,9 @@ public class Database {
     }
 
     /**
-     * 建立一個帶授權的 {@link Database} 實體
+     * 建立一個帶授權的 {@link Database} 實體。
      * <p>
-     * Create a instance {@link Database} that represents a connection to the remote database referred by {@code host}
+     * Create a {@link Database} instance with authentication information
      * </p>
      *
      * @param host     Assigned host domain and port number. i.e. {@code www.example.com:8000}
@@ -134,7 +142,7 @@ public class Database {
         }
 
         try {
-            _dbUrl = new URL(res.get("host")+"/api/");
+            _baseUrl = generateApiRootUrl(res.get("host"));
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("illegal host domain", e);
         }
@@ -145,12 +153,12 @@ public class Database {
     }
 
     /**
-     * Create a instance {@link Database} by cloning
+     * Create a instance {@link Database} by cloning.
      *
      * @param db another {@link Database}
      */
     Database(@NonNull Database db) {
-        _dbUrl = db._dbUrl;
+        _baseUrl = db._baseUrl;
         _useAuth = db._useAuth;
         _userName = db._userName;
         _authStr = db._authStr;
@@ -171,7 +179,7 @@ public class Database {
     private static Map<String, String> resolveHost(String host) {
         Map<String, String> val = Pattern.compile
                 (
-                        "^(?:https?:\\/\\/)?(?:(?<auth>(?<user>[\\w-]+):\\w+)@)?(?<host>[\\w-]+(?:\\.[\\w-]+)+(?::\\d+)?)",
+                        "^(?:https?:\\/\\/)?(?:(?<auth>(?<user>[\\w-]+):\\w+)@)?(?<host>[\\w\\d-]+(?:\\.[\\w\\d-]+)+(?::\\d+)?)",
                         Pattern.CASE_INSENSITIVE
                 )
                 .matcher(host)
@@ -183,8 +191,18 @@ public class Database {
     }
 
     /**
+     * Get URL of api root to the specific host domain.
+     *
+     * @param host host sting
+     * @return a {@link URL} instance
+     */
+    private static URL generateApiRootUrl(String host) throws MalformedURLException {
+        return new URL("http://" + host + "/api/");
+    }
+
+    /**
+     * Generate the string used in HTTP header {@code Authorization}.
      * THIS METHOD SHOULD ONLY USE BY CONSTRUCTOR
-     * Generate the string used in HTTP header {@code Authorization}
      *
      * @param auth_string user name and password pair, set in {@code user:password} format
      * @return HTTP basic authentication string
@@ -199,15 +217,58 @@ public class Database {
      */
 
     /**
-     * 取得資料表連結
+     * 取得資料表連結器。
      * <p>
      * Get specific {@link Table} by assigned table name
      * </p>
+     *
      * @param table 資料表名
      * @return 資料表連節器
      */
     public Table getTable(@NonNull String table) {
-        throw new IllegalAccessError();
+        return new Table(this, table);
     }
 
+    /**
+     * Create a {@link HttpURLConnection} instance
+     *
+     * @param url url to open
+     * @return a {@link HttpURLConnection} instance, with auth header is set when authentication is required
+     */
+    HttpURLConnection openUrl(URL url) throws IOException {
+        // log for debug
+        Log.v(this.getClass().getName(), "open link to " + url);
+
+        // open connection
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+        // set properties
+        con.setRequestProperty("accept", "application/json");
+        if (_useAuth) {
+            con.setRequestProperty("Authorization", _authStr);
+        }
+
+        return con;
+    }
+
+    /**
+     * 覆寫{@link Object#equals(Object)}方法。
+     * <p>
+     * Override the equals method
+     * </p>
+     *
+     * @param obj other object
+     * @return is equals or not
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Database)) {
+            return false;
+        }
+
+        Database other = (Database) obj;
+        return other._baseUrl.equals(this._baseUrl)
+                && other._useAuth == this._useAuth
+                && other._authStr.equals(this._authStr);
+    }
 }
