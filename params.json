@@ -1,0 +1,6 @@
+{
+  "name": "Appmate droid",
+  "tagline": "Android API wrapper for appmate",
+  "body": "## Usage\r\n\r\nJust add these lines in your `build.gradle`\r\n\r\n```gradle\r\ndependencies {\r\n    compile 'nctu.fintech:appmate:1.+'\r\n}\r\n```\r\n\r\n## Requirement\r\n\r\nMinimum API Level 19 (Android 4.4 [KITKAT])\r\n\r\n[KITKAT]: https://developer.android.com/about/versions/android-4.4.html\r\n\r\n## API Documents\r\n\r\n[Here](/appmate_droid/doc/index.html)",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
