@@ -1,1 +1,1 @@
-include ':lib-appmate', ':app-test'
+include ':lib-appmate'
