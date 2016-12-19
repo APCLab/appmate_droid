@@ -114,7 +114,7 @@ public class Database {
             throw new IllegalArgumentException("illegal host domain", e);
         }
 
-        if (res.containsKey("auth")) {
+        if (res.get("auth") != null) {
             _useAuth = true;
             _userName = res.get("user");
             _authStr = generateAuthString(res.get("auth"));
