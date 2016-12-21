@@ -1,16 +1,22 @@
 package nctu.fintech.appmate;
 
+import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Base64;
 import android.util.Log;
 
 import com.google.code.regexp.Pattern;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -227,6 +233,54 @@ public class Database {
      */
     public Table getTable(@NonNull String table) {
         return new Table(this, table);
+    }
+
+    /**
+     * 取得資料庫中的所有表單名稱。
+     * <p>
+     * Get all table names in this database.
+     * </p>
+     *
+     * @return all table names
+     * @throws IOException                  table not exist or network error
+     * @throws NetworkOnMainThreadException if this method is called on main thread
+     */
+    public String[] getTableNames() throws IOException {
+        // open connection
+        HttpURLConnection con = openUrl(_baseUrl);
+
+        // downstream & parse
+        JsonObject tables = new JsonParser()
+                .parse(Table.getResponse(con))
+                .getAsJsonObject();
+
+        // retrieve result
+        List<String> names = new LinkedList<>();
+        for (Map.Entry<String, JsonElement> pair : tables.entrySet()) {
+            names.add(pair.getKey());
+        }
+
+        // return
+        return names.toArray(new String[tables.size()]);
+    }
+
+    /**
+     * 取得資料庫中的所有資料表。
+     * <p>
+     * Get all tables in this database.
+     * </p>
+     *
+     * @return all tables
+     * @throws IOException                  table not exist or network error
+     * @throws NetworkOnMainThreadException if this method is called on main thread
+     */
+    public Table[] getTables() throws IOException {
+        String[] names = getTableNames();
+        Table[] tables = new Table[names.length];
+        for (int i = 0; i < names.length; i++) {
+            tables[i] = new Table(this, names[i]);
+        }
+        return tables;
     }
 
     /**

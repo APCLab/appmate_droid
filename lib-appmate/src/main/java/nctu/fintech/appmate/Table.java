@@ -139,7 +139,7 @@ public class Table {
      * @param tuple data to be upload
      * @throws IOException
      */
-    private static void sendRequest(HttpURLConnection con, Tuple tuple) throws IOException {
+    static void sendRequest(HttpURLConnection con, Tuple tuple) throws IOException {
         // initialize
         String boundary = "LibAppmateBoundary" + Long.toHexString(Calendar.getInstance().getTimeInMillis());
 
@@ -184,7 +184,7 @@ public class Table {
      * @throws IOException
      */
     @NonNull
-    private static String getResponse(HttpURLConnection con) throws IOException {
+    static String getResponse(HttpURLConnection con) throws IOException {
         StringBuilder builder = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
             String in;
