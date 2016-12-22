@@ -65,6 +65,34 @@ public class Table {
     private final String _table;
 
     /*
+     * Read-only properties
+     */
+
+    /**
+     * 取得表單名稱。
+     * <p>
+     * Returning table name.
+     * </p>
+     *
+     * @return table name.
+     */
+    public String getTableName() {
+        return _table;
+    }
+
+    /**
+     * 取得包含此表格的資料庫。
+     * <p>
+     * Returning the database which contains this table.
+     * </p>
+     *
+     * @return database.
+     */
+    public Database getDatabase() {
+        return _db;
+    }
+
+    /*
      * Constructors
      */
 
