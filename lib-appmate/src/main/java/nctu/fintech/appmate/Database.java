@@ -290,9 +290,6 @@ public class Database {
      * @return a {@link HttpURLConnection} instance, with auth header is set when authentication is required
      */
     HttpURLConnection openUrl(URL url) throws IOException {
-        // log for debug
-        Log.v(this.getClass().getName(), "open link to " + url);
-
         // open connection
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
