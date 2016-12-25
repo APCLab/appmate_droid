@@ -209,7 +209,7 @@ public class Tuple {
     public Set<Map.Entry<String, String>> entrySet() {
         HashMap<String, String> map = new HashMap<>();
         for (Map.Entry<String, JsonElement> p : _obj.entrySet()) {
-            map.put(p.getKey(), p.getValue().getAsString());
+            map.put(p.getKey(), p.getValue().toString());
         }
         return map.entrySet();
     }
