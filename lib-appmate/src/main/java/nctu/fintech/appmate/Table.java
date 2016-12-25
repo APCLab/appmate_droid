@@ -142,6 +142,30 @@ public class Table {
     }
 
     /*
+     * Override Object methods
+     */
+
+    @Override
+    public String toString() {
+        return String.format("Table{%s@%s}", _table, _db._baseUrl.getHost());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Table)) {
+            return false;
+        }
+
+        Table other = (Table) obj;
+        return _db.equals(other._db) && _table.equals(other._table);
+    }
+
+    @Override
+    public int hashCode() {
+        return _db.hashCode() ^ _table.hashCode();
+    }
+
+    /*
      * assisting functions
      */
 

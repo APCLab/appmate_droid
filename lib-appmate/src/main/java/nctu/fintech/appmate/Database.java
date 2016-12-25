@@ -4,7 +4,6 @@ import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.code.regexp.Pattern;
 import com.google.gson.JsonElement;
@@ -171,6 +170,32 @@ public class Database {
     }
 
     /*
+     * Override Object methods
+     */
+
+    @Override
+    public String toString() {
+        return String.format("Database{%s}", _baseUrl.getHost());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Database)) {
+            return false;
+        }
+
+        Database other = (Database) obj;
+        return this._baseUrl.equals(other._baseUrl)
+                && this._useAuth == other._useAuth
+                && (!this._useAuth || this._authStr.equals(other._authStr));
+    }
+
+    @Override
+    public int hashCode() {
+        return _useAuth ? _baseUrl.hashCode() ^ _authStr.hashCode() : _baseUrl.hashCode();
+    }
+
+    /*
      * assisting member for constructors
      */
 
@@ -302,24 +327,4 @@ public class Database {
         return con;
     }
 
-    /**
-     * 覆寫{@link Object#equals(Object)}方法。
-     * <p>
-     * Override the equals method
-     * </p>
-     *
-     * @param obj other object
-     * @return is equals or not
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof Database)) {
-            return false;
-        }
-
-        Database other = (Database) obj;
-        return other._baseUrl.equals(this._baseUrl)
-                && other._useAuth == this._useAuth
-                && other._authStr.equals(this._authStr);
-    }
 }
