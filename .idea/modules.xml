@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/appmate_droid.iml" filepath="$PROJECT_DIR$/appmate_droid.iml" />
-      <module fileurl="file://$PROJECT_DIR$/lib-appmate/lib-appmate.iml" filepath="$PROJECT_DIR$/lib-appmate/lib-appmate.iml" />
+      <module fileurl="file://$PROJECT_DIR$/lib/lib.iml" filepath="$PROJECT_DIR$/lib/lib.iml" />
     </modules>
   </component>
 </project>

@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,7 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -46,12 +47,12 @@ public class Tuple {
      */
 
     /**
-     * the {@link Table} which owns this {@link Tuple}
+     * the {@link Table} which owns this {@link Tuple}.
      */
-    private Table _table;
+    private TableCore _core;
 
     /**
-     * the container where elements actually saved
+     * the container where elements actually saved.
      */
     private JsonObject _obj;
 
@@ -60,21 +61,21 @@ public class Tuple {
      */
 
     /**
-     * Create an empty {@link Tuple} instance
+     * Create an empty {@link Tuple} instance.
      */
     public Tuple() {
-        _table = null;
+        _core = new NullCore();
         _obj = new JsonObject();
     }
 
     /**
-     * Create an empty {@link Tuple} instance from retrieved {@link JsonObject}
+     * Create an empty {@link Tuple} instance from retrieved {@link JsonObject}.
      *
-     * @param table source {@link Table}
-     * @param o     retrieved {@link JsonObject}
+     * @param core
+     * @param o
      */
-    Tuple(Table table, JsonObject o) {
-        reset(table, o);
+    Tuple(TableCore core, JsonObject o) {
+        reset(core, o);
     }
 
     /*
@@ -82,13 +83,13 @@ public class Tuple {
      */
 
     /**
-     * Reset tuple by specific data
+     * Reset tuple by specific data.
      *
-     * @param table source table
-     * @param o data to reset this tuple
+     * @param core
+     * @param o
      */
-    void reset(Table table, JsonObject o) {
-        _table = table;
+    void reset(TableCore core, JsonObject o) {
+        _core = core;
         _obj = o;
     }
 
@@ -99,7 +100,7 @@ public class Tuple {
     /**
      * 轉型為{@link JSONObject}。
      * <p>
-     *     Cast type to {@link JSONObject}.
+     * Cast type to {@link JSONObject}.
      * </p>
      *
      * @return a {@link JSONObject} instance
@@ -115,7 +116,7 @@ public class Tuple {
     /**
      * 轉型為{@link JsonObject}。
      * <p>
-     *     請注意{@link JsonObject}跟{@link JSONObject}是不一樣的。
+     * 請注意{@link JsonObject}跟{@link JSONObject}是不一樣的。
      * </p>
      * <p>
      * Cast type to GSON {@link JsonObject}.
@@ -123,7 +124,7 @@ public class Tuple {
      * <p>
      * Notice this it NOT {@link JSONObject}.
      * For usage of {@link JSONObject}, use {@link Tuple#toJSONObject()} instead
-     *</p>
+     * </p>
      *
      * @return a {@link JsonObject} instance
      */
@@ -163,7 +164,7 @@ public class Tuple {
     /**
      * 取得此容器是否為空。
      * <p>
-     *     Whether the set is empty or not.
+     * Whether the set is empty or not.
      * </p>
      *
      * @return this container is empty or not
@@ -207,9 +208,19 @@ public class Tuple {
      */
     @NonNull
     public Set<Map.Entry<String, String>> entrySet() {
-        HashMap<String, String> map = new HashMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> p : _obj.entrySet()) {
-            map.put(p.getKey(), p.getValue().toString());
+            JsonElement element = p.getValue();
+            if (!(element instanceof JsonPrimitive)) {
+                map.put(p.getKey(), element.toString());
+            }
+
+            JsonPrimitive primitive = (JsonPrimitive) element;
+            if (primitive.isString()) {
+                map.put(p.getKey(), primitive.getAsString());
+            } else {
+                map.put(p.getKey(), primitive.toString());
+            }
         }
         return map.entrySet();
     }
@@ -229,7 +240,17 @@ public class Tuple {
      * @throws ClassCastException if the element not a valid string value.
      */
     public String get(String key) {
-        return _obj.get(key).toString();
+        JsonElement element = _obj.get(key);
+        if (!(element instanceof JsonPrimitive)) {
+            return element.toString();
+        }
+
+        JsonPrimitive primitive = (JsonPrimitive) element;
+        if (primitive.isString()) {
+            return primitive.getAsString();
+        } else {
+            return primitive.toString();
+        }
     }
 
     /**

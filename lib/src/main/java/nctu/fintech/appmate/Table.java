@@ -8,16 +8,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
-import java.util.Calendar;
 import java.util.Map;
+
+import static nctu.fintech.appmate.DbCore.getResponse;
+import static nctu.fintech.appmate.DbCore.sendRequest;
 
 /**
  * 資料表連接器。
@@ -48,21 +45,8 @@ public class Table {
     /*
      * Global variables
      */
-
-    /**
-     * Mother database.
-     */
-    private final Database _db;
-
-    /**
-     * URL referrer to table api.
-     */
-    private final URL _baseUrl;
-
-    /**
-     * table name.
-     */
-    private final String _table;
+    private final TableCore _core;
+    private  Database _parent;
 
     /*
      * Read-only properties
@@ -77,7 +61,7 @@ public class Table {
      * @return table name.
      */
     public String getTableName() {
-        return _table;
+        return _core.tableName;
     }
 
     /**
@@ -89,7 +73,9 @@ public class Table {
      * @return database.
      */
     public Database getDatabase() {
-        return _db;
+        return _parent == null
+                ? (_parent = new Database(_core))
+                : _parent;
     }
 
     /*
@@ -106,9 +92,7 @@ public class Table {
      * @param table 資料表名稱
      */
     public Table(@NonNull String host, @NonNull String table) {
-        _db = new Database(host);
-        _table = table;
-        _baseUrl = generateTableUrl(_db._baseUrl, table);
+        _core = new TableCore(host, table);
     }
 
     /**
@@ -123,9 +107,7 @@ public class Table {
      * @param table    資料表名稱
      */
     public Table(@NonNull String host, @NonNull String username, @NonNull String password, @NonNull String table) {
-        _db = new Database(host, username, password);
-        _table = table;
-        _baseUrl = generateTableUrl(_db._baseUrl, table);
+        _core = new TableCore(host, username, password, table);
     }
 
     /**
@@ -135,10 +117,8 @@ public class Table {
      * @param db    mother {@link Database}
      * @param table table name
      */
-    Table(@NonNull Database db, @NonNull String table) {
-        _db = db;
-        _table = table;
-        _baseUrl = generateTableUrl(_db._baseUrl, table);
+    Table(@NonNull DbCore db, @NonNull String table) {
+        _core = new TableCore(db, table);
     }
 
     /*
@@ -147,104 +127,17 @@ public class Table {
 
     @Override
     public String toString() {
-        return String.format("Table{%s@%s}", _table, _db._baseUrl.getHost());
+        return String.format("Table{%s@%s}", _core.tableName, _core.url.getHost());
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof Table)) {
-            return false;
-        }
-
-        Table other = (Table) obj;
-        return _db.equals(other._db) && _table.equals(other._table);
+        return obj instanceof Table && _core.equals(((Table) obj)._core);
     }
 
     @Override
     public int hashCode() {
-        return _db.hashCode() ^ _table.hashCode();
-    }
-
-    /*
-     * assisting functions
-     */
-
-    /**
-     * Get table api URL.
-     *
-     * @param apiRoot a url referrer to api root
-     * @param table   table name
-     * @return a url referrer to table root
-     */
-    private static URL generateTableUrl(URL apiRoot, String table) {
-        try {
-            return new URL(apiRoot, "./" + table + "/");
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("illegal table name", e);
-        }
-    }
-
-    /**
-     * Process request content upstream.
-     *
-     * @param con   {@link HttpURLConnection} instance
-     * @param tuple data to be upload
-     * @throws IOException
-     */
-    static void sendRequest(HttpURLConnection con, Tuple tuple) throws IOException {
-        // initialize
-        String boundary = "LibAppmateBoundary" + Long.toHexString(Calendar.getInstance().getTimeInMillis());
-
-        // set property
-        con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        con.setDoOutput(true);
-
-        boundary = "\r\n--" + boundary;
-
-        // build content to be uploaded
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<String, String> p : tuple.entrySet()) {
-            // boundary
-            builder.append(boundary);
-
-            // field name
-            builder.append("\r\nContent-Disposition: form-data; name=\"");
-            builder.append(p.getKey());
-            builder.append('"');
-
-            //TODO filename!?
-
-            // start upload
-            builder.append("\r\n\r\n");
-            builder.append(p.getValue());
-        }
-
-        builder.append(boundary);
-        builder.append("--");
-
-        // upstream
-        try (DataOutputStream writer = new DataOutputStream(con.getOutputStream())) {
-            writer.writeBytes(builder.toString());
-        }
-    }
-
-    /**
-     * Get response content.
-     *
-     * @param con a {@link HttpURLConnection}
-     * @return response content
-     * @throws IOException
-     */
-    @NonNull
-    static String getResponse(HttpURLConnection con) throws IOException {
-        StringBuilder builder = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
-            String in;
-            while ((in = reader.readLine()) != null) {
-                builder.append(in);
-            }
-        }
-        return builder.toString();
+        return _core.hashCode();
     }
 
     /*
@@ -263,7 +156,7 @@ public class Table {
      */
     public Tuple[] get() throws IOException {
         // open connection
-        HttpURLConnection con = _db.openUrl(_baseUrl);
+        HttpURLConnection con = _core.openUrl();
 
         // downstream & parse
         JsonArray jArray = new JsonParser()
@@ -274,7 +167,7 @@ public class Table {
         int len = jArray.size();
         Tuple[] tArray = new Tuple[len];
         for (int i = 0; i < len; i++) {
-            tArray[i] = new Tuple(this, jArray.get(i).getAsJsonObject());
+            tArray[i] = new Tuple(_core, jArray.get(i).getAsJsonObject());
         }
 
         // return
@@ -293,12 +186,11 @@ public class Table {
      * @throws NetworkOnMainThreadException if this method is called on main thread
      */
     public Tuple get(int id) throws IOException {
-        URL url = new URL(_baseUrl, "./" + id + "/");
-        HttpURLConnection con = _db.openUrl(url);
+        HttpURLConnection con = _core.openUrl(id);
         JsonObject obj = new JsonParser()
                 .parse(getResponse(con))
                 .getAsJsonObject();
-        return new Tuple(this, obj);
+        return new Tuple(_core, obj);
     }
 
     /**
@@ -393,8 +285,7 @@ public class Table {
         }
 
         // open connection
-        URL url = new URL(_baseUrl, builder.toString());
-        HttpURLConnection con = _db.openUrl(url);
+        HttpURLConnection con = _core.openUrl(builder.toString());
 
         // downstream & parse
         JsonArray jArray = new JsonParser()
@@ -405,7 +296,7 @@ public class Table {
         int len = jArray.size();
         Tuple[] tArray = new Tuple[len];
         for (int i = 0; i < len; i++) {
-            tArray[i] = new Tuple(this, jArray.get(i).getAsJsonObject());
+            tArray[i] = new Tuple(_core, jArray.get(i).getAsJsonObject());
         }
 
         // return
@@ -429,7 +320,7 @@ public class Table {
     public void add(Tuple... items) throws IOException {
         for (Tuple tuple : items) {
             // open connection
-            HttpURLConnection con = _db.openUrl(_baseUrl);
+            HttpURLConnection con = _core.openUrl();
             con.setRequestMethod("POST");
 
             // upstream
@@ -440,7 +331,7 @@ public class Table {
                     .parse(getResponse(con))
                     .getAsJsonObject();
 
-            tuple.reset(this, obj);
+            tuple.reset(_core, obj);
         }
     }
 
@@ -468,8 +359,7 @@ public class Table {
      */
     public void update(int id, Tuple item, boolean overwrite) throws IOException {
         // open connection
-        URL url = new URL(_baseUrl, "./" + id + "/");
-        HttpURLConnection con = _db.openUrl(url);
+        HttpURLConnection con = _core.openUrl(id);
         con.setRequestMethod(overwrite ? "PUT" : "PATCH");
 
         // upstream
@@ -480,7 +370,7 @@ public class Table {
                 .parse(getResponse(con))
                 .getAsJsonObject();
 
-        item.reset(this, obj);
+        item.reset(_core, obj);
     }
 
     /**
@@ -526,8 +416,7 @@ public class Table {
 
         for (int id : ids) {
             // open connection
-            URL url = new URL(_baseUrl, "./" + id + "/");
-            HttpURLConnection con = _db.openUrl(url);
+            HttpURLConnection con = _core.openUrl(id);
             con.setRequestMethod("DELETE");
 
             // check result
