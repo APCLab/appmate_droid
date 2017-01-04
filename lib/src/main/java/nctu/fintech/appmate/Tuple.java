@@ -185,9 +185,13 @@ public class Tuple {
      * </p>
      *
      * @return id, or -1 when this element is local
+     * @throws UnsupportedOperationException when item id is not assigned.
      */
     public int getId() {
-        return _obj.has("id") ? _obj.get("id").getAsInt() : -1;
+        if (!_obj.has("id")) {
+            throw new UnsupportedOperationException("item id is not assigned.");
+        }
+        return _obj.get("id").getAsInt();
     }
 
     /**
