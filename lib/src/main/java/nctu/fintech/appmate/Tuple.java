@@ -1,5 +1,6 @@
 package nctu.fintech.appmate;
 
+import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
 
 import com.google.gson.JsonElement;
@@ -10,6 +11,8 @@ import com.google.gson.JsonPrimitive;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -41,6 +44,8 @@ public class Tuple {
 
     private final static String DATE_FORMAT = "yyyy-MM-dd";
     private final static String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    private final static int INDEX_TABLE_NAME = 2;
+    private final static int INDEX_ITEM_ID = 3;
 
     /*
      * Global variables
@@ -225,6 +230,16 @@ public class Tuple {
         return map.entrySet();
     }
 
+    /**
+     * Get item url on db.
+     *
+     * @return url
+     * @throws UnsupportedOperationException when item id is not assigned.
+     */
+    String toUrl() {
+        return String.format("%s%s/", _core.url, getId());
+    }
+
     /*
      * `Get` methods
      */
@@ -377,7 +392,36 @@ public class Tuple {
         }
     }
 
-    //TODO put tuple
+    /**
+     * 取得外來鍵值。
+     * 需特別注意此方法會建立連線已取得外來鍵資訊。
+     * <p>
+     * Get foreign key value as {@link Tuple} type. It should be noticed that this method create a network connection.
+     * </p>
+     *
+     * @param key key
+     * @return value
+     * @throws ClassCastException            if the element not a valid url value.
+     * @throws UnsupportedOperationException if the value is not in the same db as this item.
+     * @throws IOException                   table not exist or network error
+     * @throws NetworkOnMainThreadException  if this method is called on main thread
+     */
+    public Tuple getAsTuple(String key) throws IOException {
+        URL url = new URL(_obj.get(key).getAsString());
+
+        // check domain
+        if (!url.getHost().equals(_core.url.getHost())) {
+            throw new UnsupportedOperationException("cross domain query not supported");
+        }
+
+        // build table core
+        String[] param = url.getPath().split("/");
+        String tableNm = param[INDEX_TABLE_NAME];
+        int id = Integer.parseInt(param[INDEX_ITEM_ID]);
+
+        Table table = new Table(_core, tableNm);
+        return table.get(id);
+    }
     //TODO put drawable
 
     /*
@@ -464,7 +508,18 @@ public class Tuple {
         _obj.addProperty(key, sdf.format(value.getTime()));
     }
 
-    //TODO put tuple
+    /**
+     * 新增一組鍵值對到容器中。
+     * <p>
+     * Add a {@link Tuple} value into this container.
+     * </p>
+     *
+     * @param key   key
+     * @param value value
+     */
+    public void put(String key, Tuple value) {
+        _obj.addProperty(key, value.toUrl());
+    }
     //TODO put drawable
 
     /*
