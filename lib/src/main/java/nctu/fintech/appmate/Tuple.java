@@ -1,10 +1,12 @@
 package nctu.fintech.appmate;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
@@ -12,6 +14,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -20,6 +24,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -46,6 +51,7 @@ public class Tuple {
     private final static String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     private final static int INDEX_TABLE_NAME = 2;
     private final static int INDEX_ITEM_ID = 3;
+    private final static String PREFIX_IMG = "IMG";
 
     /*
      * Global variables
@@ -61,6 +67,11 @@ public class Tuple {
      */
     private JsonObject _obj;
 
+    /**
+     * the container saved images
+     */
+    private Map<String, Bitmap> _img;
+
     /*
      * Constructors
      */
@@ -69,8 +80,7 @@ public class Tuple {
      * Create an empty {@link Tuple} instance.
      */
     public Tuple() {
-        _core = new NullCore();
-        _obj = new JsonObject();
+        reset(new NullCore(), new JsonObject());
     }
 
     /**
@@ -96,6 +106,7 @@ public class Tuple {
     void reset(TableCore core, JsonObject o) {
         _core = core;
         _obj = o;
+        _img = new LinkedHashMap<>();
     }
 
     /*
@@ -242,6 +253,16 @@ public class Tuple {
      */
     String toUrl() {
         return String.format("%s%s/", _core.url, getId());
+    }
+
+    /**
+     * Get image to upload.
+     *
+     * @param key ~
+     * @return ~
+     */
+    Bitmap getUploadBitmap(String key) {
+        return (!key.startsWith(PREFIX_IMG) || !_img.containsKey(key)) ? null : _img.get(key); //TODO remove it! 不該這樣判定
     }
 
     /*
@@ -426,7 +447,49 @@ public class Tuple {
         Table table = new Table(_core, tableNm);
         return table.get(id);
     }
-    //TODO put drawable
+
+    /**
+     * 取得圖片。
+     * 需特別注意此方法會建立連線已取得外來鍵資訊。
+     * <p>
+     * Get foreign key value as {@link Tuple} type. It should be noticed that this method create a network connection.
+     * </p>
+     *
+     * @param key key
+     * @return value
+     * @throws ClassCastException            if the element not a valid url value.
+     * @throws UnsupportedOperationException if the value is not in the same db as this item.
+     * @throws IOException                   table not exist or network error
+     * @throws NetworkOnMainThreadException  if this method is called on main thread
+     */
+    public Bitmap getAsBitmap(String key) throws IOException {
+        // local operation
+        if (_img.containsKey(key)) {
+            return _img.get(key);
+        }
+
+        // check domain
+        URL url = new URL(_obj.get(key).getAsString());
+        if (!url.getHost().equals(_core.url.getHost())) {
+            throw new UnsupportedOperationException("cross domain query not supported");
+        }
+
+        // create connection
+        HttpURLConnection con = _core.openUrl(url);
+
+        // check response code
+        int code = con.getResponseCode(); //TODO merge this to DbCore
+        if (code != HttpURLConnection.HTTP_OK) {
+            Log.e(getClass().getName(), "unexpected HTTP response code received: " + code);
+        }
+
+        // read response
+        try (InputStream input = con.getInputStream()) {
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+            _img.put(key, bitmap); //TODO 建立欄位修改紀錄，簡化上傳量
+            return bitmap;
+        }
+    }
 
     /*
      * `Put` methods
@@ -524,7 +587,21 @@ public class Tuple {
     public void put(String key, Tuple value) {
         _obj.addProperty(key, value.toUrl());
     }
-    //TODO put drawable
+
+    /**
+     * 新增一組鍵值對到容器中。
+     * <p>
+     * Add a {@link Bitmap}(aka image) into this container.
+     * </p>
+     *
+     * @param key   key
+     * @param value the image to added
+     */
+    public void put(String key, Bitmap value) {
+        String name = String.format("%s%x%x", PREFIX_IMG, System.currentTimeMillis(), new Random().nextInt());
+        _obj.addProperty(key, name);
+        _img.put(key, value);
+    }
 
     /*
      * `Remove` method
@@ -540,7 +617,8 @@ public class Tuple {
      * @return success or not
      */
     public boolean remove(String key) {
-        return !_obj.remove(key).equals(JsonNull.INSTANCE);
+        return (_obj.remove(key) != null)
+                && (_img.remove(key) != null);
     }
 
 }

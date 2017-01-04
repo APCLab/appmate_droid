@@ -1,5 +1,6 @@
 package nctu.fintech.appmate;
 
+import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
@@ -170,29 +171,35 @@ class DbCore {
         boundary = "\r\n--" + boundary;
 
         // build content to be uploaded
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<String, String> p : tuple.entrySet()) {
-            // boundary
-            builder.append(boundary);
-
-            // field name
-            builder.append("\r\nContent-Disposition: form-data; name=\"");
-            builder.append(p.getKey());
-            builder.append('"');
-
-            //TODO filename!?
-
-            // start upload
-            builder.append("\r\n\r\n");
-            builder.append(p.getValue());
-        }
-
-        builder.append(boundary);
-        builder.append("--");
-
-        // upstream
         try (DataOutputStream writer = new DataOutputStream(con.getOutputStream())) {
-            writer.writeUTF(builder.toString());
+            for (Map.Entry<String, String> p : tuple.entrySet()) {
+                String key = p.getKey();
+                String value = p.getValue();
+
+                // boundary
+                writer.writeUTF(boundary);
+
+                // field name
+                writer.writeUTF("\r\nContent-Disposition: form-data; name=\"");
+                writer.writeUTF(key);
+                writer.writeUTF("\"");
+
+                // check type
+                Bitmap bitmap = tuple.getUploadBitmap(key);
+                if (bitmap != null) { // image type
+                    writer.writeUTF("; filename=\"");
+                    writer.writeUTF(value);
+                    writer.writeUTF(".jpg\"\r\n");
+                    writer.writeUTF("Content-Type: image/jpeg\r\n\r\n");
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, writer);
+                } else { // normal type
+                    writer.writeUTF("\r\n\r\n");
+                    writer.writeUTF(value);
+                }
+            }
+
+            writer.writeUTF(boundary);
+            writer.writeUTF("--");
         }
     }
 
