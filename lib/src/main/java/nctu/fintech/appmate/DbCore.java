@@ -13,7 +13,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Calendar;
 import java.util.Map;
 
 class DbCore {
@@ -162,7 +161,7 @@ class DbCore {
      */
     static void sendRequest(HttpURLConnection con, Tuple tuple) throws IOException {
         // initialize
-        String boundary = "LibAppmateBoundary" + Long.toHexString(Calendar.getInstance().getTimeInMillis());
+        String boundary = "Boundary" + Long.toHexString(System.currentTimeMillis());
 
         // set property
         con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
