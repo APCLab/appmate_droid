@@ -20,7 +20,7 @@ class DbCore {
     final URL url;
     final boolean useAuth;
     final String username;
-    final String authStr;
+    private final String authStr;
 
     /**
      * Create a {@link DbCore} instance.
