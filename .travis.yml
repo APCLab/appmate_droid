@@ -1,0 +1,49 @@
+language: android
+
+# setup
+android:
+    components:
+        - tools
+        - build-tools-22.0.1
+        # - build-tools-25.0.2
+        - extra-android-support
+        - android-22
+
+    licenses:
+        - '.+'
+
+# testing env
+jdk:
+    - oraclejdk8
+    - oraclejdk7
+    - openjdk7
+
+env:
+    # - ANDROID_TARGET=25
+    # - ANDROID_TARGET=23
+    - ANDROID_TARGET=22
+    # - ANDROID_TARGET=19
+
+matrix:
+    fast_finish: true
+    allow_failures:
+        jdk:
+            - openjdk7
+            - oraclejdk7
+
+# ignore
+branches:
+    except:
+        - gh-pages
+
+# lifecycle
+before_install:
+    - chmod +x gradlew
+
+before_cache:
+    - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+
+cache:
+    directories:
+        - .gradle/caches/
+        - .gradle/wrapper/
