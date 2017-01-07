@@ -15,22 +15,13 @@ android:
         - '.+'
 
 # testing env
-jdk:
-    - oraclejdk8
-    - oraclejdk7
-    - openjdk7
+jdk: oraclejdk8
 
 env:
     # - ANDROID_TARGET=25
     # - ANDROID_TARGET=23
     - ANDROID_TARGET=22
     # - ANDROID_TARGET=19
-
-matrix:
-    fast_finish: true
-    allow_failures:
-        - jdk: openjdk7
-        - jdk: oraclejdk7
 
 # ignore
 branches:
