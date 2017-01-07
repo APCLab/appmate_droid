@@ -24,6 +24,14 @@ dependencies {
     compile 'org.jetbrains:annotations-java5:15.0'
 }
 
+if (JavaVersion.current().isJava8Compatible()) {
+  allprojects {
+    tasks.withType(Javadoc) {
+      options.addStringOption('Xdoclint:none', '-quiet')
+    }
+  }
+}
+
 // ./gradlew clean build generateRelease
 apply plugin: 'maven'
 

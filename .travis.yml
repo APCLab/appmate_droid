@@ -4,6 +4,7 @@ language: android
 android:
     components:
         - tools
+        - platform-tools
         - build-tools-22.0.1
         # - build-tools-25.0.2
         - extra-android-support
