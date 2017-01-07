@@ -1,22 +1,29 @@
-# appmate droid wrapper
+# appmate droid
 
 [![Build Status](https://travis-ci.org/APCLab/appmate_droid.svg?branch=master)](https://travis-ci.org/APCLab/appmate_droid)
 
 Android API wrapper for [appmate].
 
+## Document
+
+***[Here]***
+
 ## Requirement
 
-Minimum API Level 19 (Android 4.4 [KITKAT])
+**Minimum** API Level 19 (Android 4.4 [KITKAT])
 
 ## Usage
+
+[![Download](https://api.bintray.com/packages/apclab/appmate/appmate/images/download.svg) ](https://bintray.com/apclab/appmate/appmate/_latestVersion)
 
 Just add these lines in your `build.gradle`
 
 ```
 dependencies {
-    compile 'nctu.fintech:appmate:1.+'
+    compile "nctu.fintech:appmate:1.+"
 }
 ```
 
 [appmate]: /APCLab/appmate
 [KITKAT]: https://developer.android.com/about/versions/android-4.4.html
+[Here]: https://apclab.github.io/appmate_droid/doc/index.html
