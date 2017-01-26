@@ -46,7 +46,7 @@ public class Table {
      * Global variables
      */
     private final TableCore _core;
-    private  Database _parent;
+    private Database _parent;
 
     /*
      * Read-only properties
@@ -138,6 +138,62 @@ public class Table {
     @Override
     public int hashCode() {
         return _core.hashCode();
+    }
+
+    /*
+     * 其他功能
+     */
+
+    /**
+     * 取得資料表結構敘述。
+     *
+     * e.g. <pre>
+     * {
+     *  "id": {
+     *      "type": "integer",
+     *      "required": false,
+     *      "read_only": true,
+     *      "label": "ID"
+     *  },
+     *  "name": {
+     *      "type": "string",
+     *      "required": true,
+     *      "read_only": false,
+     *      "label": "Name",
+     *      "max_length": 42
+     *  },
+     *  "msg": {
+     *      "type": "string",
+     *      "required": false,
+     *      "read_only": false,
+     *      "label": "Msg"
+     *  },
+     *  "timestamp": {
+     *      "type": "datetime",
+     *      "required": false,
+     *      "read_only": true,
+     *      "label": "Timestamp"
+     *  }
+     * }</pre>
+     *
+     * @return 資料表結構。
+     * @throws IOException
+     */
+    public Tuple getSchema() throws IOException {
+        // open connection
+        HttpURLConnection con = _core.openUrl();
+        con.setRequestMethod("OPTION");
+
+        // downstream & parse
+        JsonObject schema = new JsonParser()
+                .parse(getResponse(con))
+                .getAsJsonObject()
+                .get("actions")
+                .getAsJsonObject()
+                .get("POST")
+                .getAsJsonObject(); //TODO 使用xpath-like方式解決
+
+        return new Tuple(_core, schema);
     }
 
     /*
