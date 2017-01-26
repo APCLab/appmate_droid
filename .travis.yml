@@ -27,6 +27,8 @@ env:
 branches:
     except:
         - gh-pages
+        - doxygen
+        - chinese_comment 
 
 # lifecycle
 before_install:
