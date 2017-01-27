@@ -3,53 +3,16 @@
 
 本函式庫為 [appmate] 的 Android 端接口。
 
-\section 使用
+- \subpage get-start
+- \subpage introduction
+- [瀏覽物件列表](annotated.html)
 
-\subsection 最低要求
-
-API Level 19 (即 Android 4.4 [KITKAT] 以上版本始支援)
-
-\subsection 使用權限
-
-本函式庫使用網路，請註冊 `android.permission.INTERNET` 權限
-
-\subsection 安裝
-
-本函式庫藉由 [jCenter] 發布，Android Studio使用者僅需在 `build.gradle` 中新增以下幾行即可
-
-```
-dependencies {
-    compile 'nctu.fintech:appmate:1.2'
-}
-```
-
-\section 說明
-
-\subsection 錯誤控制
-
-由於網路操作牽涉諸多干涉因素，本函式庫中所有使用網路之函式皆宣告為 [throws] IOException （不處理任何錯誤直接拋出），開發者請自行斟酌應用情境並進行錯誤控制。
-
-\subsection 偵錯
-
-內部偵測到之錯誤皆會顯示在 [logcat] 中，輸出名稱為 `nctu.fintech.appmate.<class name>`。
-
-\subsection 執行緒控制
-
-Android 並不允許在主執行緒上進行網路操作，請使用 [AsyncTask] 或 [Thread] 進行包裝。
-
-
-\section 臭蟲回報
+\section 錯誤回報
 
 請開 [issue]
 
 
 <!--分隔線: 連結清單-->
 [appmate]: https://github.com/APCLab/appmate
-[KITKAT]: https://developer.android.com/about/versions/android-4.4.html
-[jCenter]: https://bintray.com/apclab/appmate/appmate/_latestVersion
-[throws]: https://docs.oracle.com/javase/tutorial/essential/exceptions/declaring.html
-[logcat]: https://developer.android.com/studio/debug/am-logcat.html
-[AsyncTask]: https://developer.android.com/reference/android/os/AsyncTask.html
-[Thread]: https://developer.android.com/reference/java/lang/Thread.html
 [issue]: https://github.com/APCLab/appmate_droid/issues
 */
