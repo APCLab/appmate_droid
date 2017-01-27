@@ -16,18 +16,22 @@ import java.util.Map;
 import static nctu.fintech.appmate.DbCore.getResponse;
 
 /**
- * 資料庫連接物件，本型別適用於須存取多個 {@link Table} 時方便建立連線之用。
+ * 指向資料庫的連接物件，本類別適用於須存取多個 {@link Table} 時方便建立連線之用。
  *
- * <p>
- *     Class {@link Database} represents an {@code appmate} database.
- *</p>
- * <p>
- *     A {@link Database} instance is not required on creating a {@link Table} instance, or creating connection.
- *     It helps when multiple table is used, which let develop can create multiple {@link Table} instance with less hard-coded parameter and make less mistake.
- * </p>
- * <p>
- *     It should be noted that a {@link Database} instance does not establish the actual network connection.
- * </p>
+ * \note
+ * 此物件指向 `http://<host>/api/`
+ *
+ * 在一般使用情境下，{@link Database} 並非必須建立的物件，唯當要自同一個資料庫建立多組 {@link Table} 時候，
+ * 可利用 {@link Database#getTable(String)} 方法減少寫死參數的使用，
+ * 或利用 {@link Database#getTables()} 可進行查詢並取得所有的資料表物件。如：
+ *
+ * \code{.java}
+ * Database db = new Database("www.example.com:8000", "user", "passw0rd");
+ * Table[] tables = db.getTables();
+ * \endcode
+ *
+ * \remarks
+ * 建立 {@link Database} 實體(instance)時候並不會建立網路連線。
  */
 public class Database {
 
@@ -41,13 +45,16 @@ public class Database {
      * read-only fields returning
      */
 
+    /** @name 屬性查詢
+     * @{*/
+
     /**
-     * 取得此資料庫使用授權與否。
+     * 取得是否使用授權。
      * <p>
-     * Return that it use authentication or not.
-     * </p>
+     * 本函式回傳此物件內登記為使用授權（需要登入）與否，
+     * 此屬性來自物件建構時依輸入參數所做之判斷，並不代表資料庫端認定需要登入與否。
      *
-     * @return use authentication or not
+     * @return 使用授權與否
      */
     public boolean isAuth() {
         return _core.useAuth;
@@ -56,31 +63,34 @@ public class Database {
     /**
      * 取得使用者名稱。
      * <p>
-     * Return the username.
-     * </p>
+     * 本函式回傳此物件內登記的使用者名稱，
+     * 此屬性來自物件建構時依輸入參數所做之判斷，並不代表資料庫端認定該使用者存在與否。
      *
-     * @return username
+     * @return 使用者名稱，當此資料庫為不使用授權時，回傳 `null`
      */
     public String getUserName() {
         return _core.username;
     }
 
+    /**@}*/
+
     /*
      * constructors
      */
 
+    /** @name 建構子
+     * @{*/
+
     /**
-     * 建立一個 {@link Database} 實體。
+     * 建立一個不帶授權的 {@link Database} 實體。
      * <p>
-     * Create a {@link Database} instance which represents a connection to the remote database referred by {@code host}
-     * </p>
-     * <p>
-     * For develop whom use this constructor, it is known that frequency request without authentication
-     * would trigger <a href="https://docs.djangoproject.com/es/1.10/ref/csrf/">CSRF protection</a> of the database.
-     * Please consider use authenticated method instead.
-     * </p>
+     * \attention
+     * 基於安全性因素，單一裝置上高頻率地進行操作會觸發
+     * <a href="https://docs.djangoproject.com/es/1.10/ref/csrf/">CSRF protection</a>
+     * 保護機制。
+     * 對於需要頻繁進行操作的資料表，請考慮使用 {@link Database#Database(String, String, String)}。
      *
-     * @param host Assigned host domain and port number. i.e. {@code www.example.com:8000}
+     * @param host 指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
      */
     public Database(@NonNull String host) {
         _core = new DbCore(host);
@@ -88,26 +98,25 @@ public class Database {
 
     /**
      * 建立一個帶授權的 {@link Database} 實體。
-     * <p>
-     * Create a {@link Database} instance with authentication information
-     * </p>
      *
-     * @param host     Assigned host domain and port number. i.e. {@code www.example.com:8000}
-     * @param username Assigned username to login
-     * @param password Assigned password to login
+     * @param host     指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param username 登入所使用的使用者名稱
+     * @param password 登入所使用的密碼
      */
     public Database(@NonNull String host, @NonNull String username, @NonNull String password) {
         _core = new DbCore(host, username, password);
     }
 
     /**
-     * Create a instance {@link Database} by cloning.
+     * 以複製參數方式建立一個 {@link Database} 實體。
      *
-     * @param core another {@link Database}
+     * @param core 另一個 {@link Database}
      */
     Database(DbCore core) {
         this._core = core;
     }
+
+    /**@}*/
 
     /*
      * Override Object methods
@@ -132,11 +141,13 @@ public class Database {
      * members
      */
 
+    /**@name 操作
+     * @{*/
+
     /**
      * 取得資料表連結器。
      * <p>
-     * Get specific {@link Table} by assigned table name
-     * </p>
+     * 此函式不會使用網路連線，僅以參數疊加方式建立連結接口。
      *
      * @param table 資料表名
      * @return 資料表連節器
@@ -146,14 +157,14 @@ public class Database {
     }
 
     /**
-     * 取得資料庫中的所有表單名稱。
+     * 取得資料庫中的所有資料表的名稱。
      * <p>
-     * Get all table names in this database.
-     * </p>
+     * \remarks
+     * 此函式會使用網路連線。
      *
-     * @return all table names
-     * @throws IOException                  table not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * @return 此資料庫下所有的資料表的名稱
+     * @throws IOException                  資料庫不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public String[] getTableNames() throws IOException {
         // open connection
@@ -177,12 +188,12 @@ public class Database {
     /**
      * 取得資料庫中的所有資料表。
      * <p>
-     * Get all tables in this database.
-     * </p>
+     * \remarks
+     * 此函式會使用網路連線。
      *
-     * @return all tables
-     * @throws IOException                  table not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * @return 此資料庫下所有的資料表的 {@link Table}
+     * @throws IOException                  資料庫不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Table[] getTables() throws IOException {
         String[] names = getTableNames();
@@ -192,5 +203,7 @@ public class Database {
         }
         return tables;
     }
+
+    /**@}*/
 
 }

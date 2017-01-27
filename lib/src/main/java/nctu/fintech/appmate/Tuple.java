@@ -28,18 +28,10 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * 值組，即資料表中的一列。
+ * 值組，資料的基礎型別。
  * <p>
- *     此型別操作方式類似於 {@link JSONObject}，由於資料庫支援部分較特殊之操作，故另建本型別作為預設回傳值。對於程式有相容性需求者，請使用 {@link Tuple#toJSONObject()} 方法轉型。
- * </p>
- * <p>
- *     Class {@link Tuple} represents a tuple on {@code appmate} database.
- *     This class  offers {@link JSONObject}-like API.
- * </p>
- * <p>
- *     For concern of compatible, developer can cast this class to Android {@link JSONObject} by using {@link Tuple#toJSONObject()},
- *     or Google Gson {@link JsonObject} by {@link Tuple#toJsonObject()}.
- * </p>
+ * 此類別操作方式類似於 {@link JSONObject}，由於資料庫支援部分較特殊之操作，故另建本類別作為預設回傳型態。
+ * 對於程式有相容性需求者，請使用 {@link Tuple#toJSONObject()} 方法轉型。
  */
 public class Tuple {
 
@@ -77,14 +69,29 @@ public class Tuple {
      */
 
     /**
-     * Create an empty {@link Tuple} instance.
+     * @name 建構子
+     *
+     * \todo
+     * 自 {@link String} 建立
+     *
+     * \todo
+     * 自 {@link JSONObject} 建立
+     *
+     * \todo
+     * 自 {@link JsonObject} 建立
+     *
+     * @{
+     */
+
+    /**
+     * 建立一個空的 {@link Tuple} 實體。
      */
     public Tuple() {
         reset(new NullCore(), new JsonObject());
     }
 
     /**
-     * Create an empty {@link Tuple} instance from retrieved {@link JsonObject}.
+     * 以取得的 {@link JsonObject} 建立一個 {@link Tuple} 實體。
      *
      * @param core
      * @param o
@@ -92,6 +99,8 @@ public class Tuple {
     Tuple(TableCore core, JsonObject o) {
         reset(core, o);
     }
+
+    /**@}*/
 
     /*
      * Basic operation
@@ -114,10 +123,12 @@ public class Tuple {
      */
 
     /**
-     * 轉型為{@link JSONObject}。
-     * <p>
-     * Cast type to {@link JSONObject}.
-     * </p>
+     * @name 型別轉換
+     * @{
+     */
+
+    /**
+     * 轉型為 {@link org.json.JSONObject}。
      *
      * @return a {@link JSONObject} instance
      */
@@ -130,17 +141,7 @@ public class Tuple {
     }
 
     /**
-     * 轉型為{@link JsonObject}。
-     * <p>
-     * 請注意{@link JsonObject}跟{@link JSONObject}是不一樣的。
-     * </p>
-     * <p>
-     * Cast type to GSON {@link JsonObject}.
-     * </p>
-     * <p>
-     * Notice this it NOT {@link JSONObject}.
-     * For usage of {@link JSONObject}, use {@link Tuple#toJSONObject()} instead
-     * </p>
+     * 轉型為 {@link com.google.gson.JsonObject}。
      *
      * @return a {@link JsonObject} instance
      */
@@ -149,29 +150,30 @@ public class Tuple {
     }
 
     /**
-     * 輸出JSON字串。
-     * <p>
-     * Get JSON string
-     * </p>
+     * 輸出 `JSON` 字串。
      *
-     * @return JSON string
+     * @return JSON 字串
      */
     @Override
     public String toString() {
         return _obj.toString();
     }
 
+    /**@}*/
+
     /*
      * Properties
      */
 
     /**
-     * 取得容器內資料配對數。
-     * <p>
-     * Get number of key-value pairs in this container.
-     * </p>
+     * @name 屬性查詢
+     * @{
+     */
+
+    /**
+     * 取得容器內資料數。
      *
-     * @return size of this container
+     * @return 容器內資料數
      */
     public int size() {
         return _obj.size();
@@ -179,11 +181,8 @@ public class Tuple {
 
     /**
      * 取得此容器是否為空。
-     * <p>
-     * Whether the set is empty or not.
-     * </p>
      *
-     * @return this container is empty or not
+     * @return 容器是否為空
      */
     public boolean isEmpty() {
         return _obj.size() == 0;
@@ -191,12 +190,9 @@ public class Tuple {
 
     /**
      * 取得此物件ID。
-     * <p>
-     * Get id of this container.
-     * </p>
      *
-     * @return id, or -1 when this element is local
-     * @throws UnsupportedOperationException when item id is not assigned.
+     * @return `id`
+     * @throws UnsupportedOperationException 無此欄位
      */
     public int getId() {
         if (!_obj.has("id")) {
@@ -207,27 +203,22 @@ public class Tuple {
 
     /**
      * 取得此容器是否包含某欄位。
-     * <p>
-     * Get if this container has certain key or not
-     * </p>
      *
-     * @param key key to search
-     * @return whether this container has certain key or not
+     * @param key 欄位名
+     * @return 是否包含該欄位
      */
     public boolean has(String key) {
         return _obj.has(key);
     }
 
     /**
-     * 取得內容集合，此方法適用於 {@code foreach} 陳述。
-     * <p>
-     * Returns a {@link Set} view of the mappings contained in this container
-     * </p>
+     * 取得所有內容，便於使用 `foreach` 陳述。
      *
      * @return a set view of the mappings contained in this container
      */
     @NonNull
     public Set<Map.Entry<String, String>> entrySet() {
+        //TODO 簡化
         Map<String, String> map = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> p : _obj.entrySet()) {
             JsonElement element = p.getValue();
@@ -244,6 +235,8 @@ public class Tuple {
         }
         return map.entrySet();
     }
+
+    /**@}*/
 
     /**
      * Get item url on db.
@@ -269,15 +262,14 @@ public class Tuple {
      * `Get` methods
      */
 
+    /**@{*/
+
     /**
-     * 取得值。
-     * <p>
-     * Get value as {@link String} type.
-     * </p>
+     * 取得值，以 {@link String} 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid string value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 {@link String} 型別
      */
     public String get(String key) {
         JsonElement element = _obj.get(key);
@@ -294,98 +286,77 @@ public class Tuple {
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code boolean}。
-     * <p>
-     * Get value as {@code boolean} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `boolean` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid boolean value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `boolean` 型別
      */
     public boolean getAsBoolean(String key) {
         return _obj.get(key).getAsBoolean();
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code byte}。
-     * <p>
-     * Get value as {@code byte} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `byte` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid byte value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `byte` 型別
      */
     public byte getAsByte(String key) {
         return _obj.get(key).getAsByte();
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code char}。
-     * <p>
-     * Get value as {@code char} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `char` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid char value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `char` 型別
      */
     public char getAsChar(String key) {
         return _obj.get(key).getAsCharacter();
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code float}。
-     * <p>
-     * Get value as {@code float} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `float` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid float value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `float` 型別
      */
     public float getAsFloat(String key) {
         return _obj.get(key).getAsFloat();
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code double}。
-     * <p>
-     * Get value as {@code double} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `double` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid double value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `double` 型別
      */
     public double getAsDouble(String key) {
         return _obj.get(key).getAsDouble();
     }
 
     /**
-     * 取得值，並嘗試轉型為{@code int}。
-     * <p>
-     * Get value as {@code int} type.
-     * </p>
+     * 取得值，並嘗試轉型為 `int` 型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid integer value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 `int` 型別
      */
     public int getAsInt(String key) {
         return _obj.get(key).getAsInt();
     }
 
     /**
-     * 取得值，並嘗試轉型為日期({@link Date})型別。
-     * <p>
-     * Get value as {@link Date} type.
-     * </p>
+     * 取得值，並嘗試轉型為日期（{@link Date}）型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid date value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 {@link Date} 型別
      */
     public Date getAsDate(String key) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
@@ -397,14 +368,11 @@ public class Tuple {
     }
 
     /**
-     * 取得值，並嘗試轉型為日期時間({@link Calendar})型別。
-     * <p>
-     * Get value as {@link Calendar}(aka timestamp) type.
-     * </p>
+     * 取得值，並嘗試轉型為日期時間（{@link Calendar}）型別。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException if the element not a valid timestamp value.
+     * @param key 欄位名
+     * @return 值
+     * @throws ClassCastException 當該值無法被轉型為 {@link Calendar} 型別
      */
     public Calendar getAsCalendar(String key) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault());
@@ -418,18 +386,20 @@ public class Tuple {
     }
 
     /**
-     * 取得外來鍵值。
-     * 需特別注意此方法會建立連線已取得外來鍵資訊。
+     * 取得值所指向的外來鍵。
      * <p>
-     * Get foreign key value as {@link Tuple} type. It should be noticed that this method create a network connection.
-     * </p>
+     * \attention
+     * 此方法需要使用連線相關參數，當此物件為自行建立、而非自資料表回傳時，此函式無法作用。
+     * <p>
+     * \remarks
+     * 此函式會使用網路連線。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException            if the element not a valid url value.
-     * @throws UnsupportedOperationException if the value is not in the same db as this item.
-     * @throws IOException                   table not exist or network error
-     * @throws NetworkOnMainThreadException  if this method is called on main thread
+     * @param key 欄位名
+     * @return 該值對應的外來鍵物件
+     * @throws ClassCastException            當該值無法被視為外來鍵索引
+     * @throws UnsupportedOperationException 當該值所指向的資源不在同一個資料庫中
+     * @throws IOException                   資源不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException  在主執行緒上使用此函式
      */
     public Tuple getAsTuple(String key) throws IOException {
         URL url = new URL(_obj.get(key).getAsString());
@@ -449,18 +419,20 @@ public class Tuple {
     }
 
     /**
-     * 取得圖片。
-     * 需特別注意此方法會建立連線已取得外來鍵資訊。
+     * 取得值所指向的圖片。
      * <p>
-     * Get foreign key value as {@link Tuple} type. It should be noticed that this method create a network connection.
-     * </p>
+     * \attention
+     * 此方法需要使用連線相關參數，當此物件為自行建立、而非自資料表回傳時，此函式無法作用。
+     * <p>
+     * \remarks
+     * 此函式會使用網路連線。
      *
-     * @param key key
-     * @return value
-     * @throws ClassCastException            if the element not a valid url value.
-     * @throws UnsupportedOperationException if the value is not in the same db as this item.
-     * @throws IOException                   table not exist or network error
-     * @throws NetworkOnMainThreadException  if this method is called on main thread
+     * @param key 欄位名
+     * @return 該值對應的外來鍵物件
+     * @throws ClassCastException            當該值無法被視為圖片資源
+     * @throws UnsupportedOperationException 當該值所指向的資源不在同一個資料庫中
+     * @throws IOException                   資源不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException  在主執行緒上使用此函式
      */
     public Bitmap getAsBitmap(String key) throws IOException {
         // local operation
@@ -491,18 +463,19 @@ public class Tuple {
         }
     }
 
+    /**@}*/
+
     /*
      * `Put` methods
      */
 
+    /**@{*/
+
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link String} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, String value) {
         _obj.addProperty(key, value);
@@ -510,12 +483,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Number} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Number value) {
         _obj.addProperty(key, value);
@@ -523,12 +493,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Character} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Character value) {
         _obj.addProperty(key, value);
@@ -536,12 +503,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Boolean} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Boolean value) {
         _obj.addProperty(key, value);
@@ -549,12 +513,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Date} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Date value) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
@@ -563,12 +524,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Calendar} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Calendar value) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault());
@@ -577,12 +535,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Tuple} value into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value value
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Tuple value) {
         _obj.addProperty(key, value.toUrl());
@@ -590,12 +545,9 @@ public class Tuple {
 
     /**
      * 新增一組鍵值對到容器中。
-     * <p>
-     * Add a {@link Bitmap}(aka image) into this container.
-     * </p>
      *
-     * @param key   key
-     * @param value the image to added
+     * @param key   欄位名
+     * @param value 值
      */
     public void put(String key, Bitmap value) {
         String name = String.format("%s%x%x", PREFIX_IMG, System.currentTimeMillis(), new Random().nextInt());
@@ -603,22 +555,25 @@ public class Tuple {
         _img.put(key, value);
     }
 
+    /**@}*/
+
     /*
      * `Remove` method
      */
 
+    /**@{*/
+
     /**
      * 自容器中移除一組鍵值對。
-     * <p>
-     * Remove a key-value pair.
-     * </p>
      *
-     * @param key key
-     * @return success or not
+     * @param key 欄位名
+     * @return 成功移除與否
      */
     public boolean remove(String key) {
         return (_obj.remove(key) != null)
                 && (_img.remove(key) != null);
     }
+
+    /**@}*/
 
 }

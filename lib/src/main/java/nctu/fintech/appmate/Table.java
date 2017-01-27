@@ -17,22 +17,13 @@ import static nctu.fintech.appmate.DbCore.getResponse;
 import static nctu.fintech.appmate.DbCore.sendRequest;
 
 /**
- * 資料表連接器。
- * <p>
- *     Class {@link Table} represent a table on an {@code appmate} server.
- * </p>
- * <p>
- *     For develops whom use the database without authentication,
- *     frequency request would trigger <a href="https://docs.djangoproject.com/es/1.10/ref/csrf/">CSRF protection</a> of the database.
- *     To resolve this issue a {@code CSRF token} is required but currently it is not provided and is not implemented in this client library.
- *     If frequently usage of non-authenticated database is required and reasonable, please contact the manager.
- * </p>
- * <p>
- *     It should be noted that most of methods in {@link Table} create a network connection but it <strong>doesn't</strong> handle the threading.
- *     Due to Android's policy, developers should avoid any network progress run on main thread.
- *     You can avoid {@link NetworkOnMainThreadException} by using {@link android.os.AsyncTask} or {@link Thread}.
- *     See <a href="https://developer.android.com/guide/components/processes-and-threads.html">Android API Guides: Processes and Threads</a>.
- * </p>
+ * 指向資料表的連接物件。
+ *
+ * \note
+ * 此物件為指向 `http://<host>/api/<table name>/`
+ *
+ * \remarks
+ * 建立 {@link Table} 實體(instance)時候並不會建立網路連線。
  */
 public class Table {
 
@@ -52,25 +43,21 @@ public class Table {
      * Read-only properties
      */
 
+    /**@{*/
+
     /**
-     * 取得表單名稱。
-     * <p>
-     * Returning table name.
-     * </p>
+     * 取得資料表名稱。
      *
-     * @return table name.
+     * @return 資料表名稱
      */
     public String getTableName() {
         return _core.tableName;
     }
 
     /**
-     * 取得包含此表格的資料庫。
-     * <p>
-     * Returning the database which contains this table.
-     * </p>
+     * 取得取得母資料庫接口。
      *
-     * @return database.
+     * @return 包含此資料表的資料庫連接物件
      */
     public Database getDatabase() {
         return _parent == null
@@ -78,17 +65,25 @@ public class Table {
                 : _parent;
     }
 
+    /**@}*/
+
     /*
      * Constructors
      */
 
+    /** @name 建構子
+     * @{*/
+
     /**
-     * 建立一個資料表連線實體。
+     * 建立一個不帶授權的 {@link Table} 實體。
      * <p>
-     * Create a {@link Table} instance.
-     * </p>
+     * \attention
+     * 基於安全性因素，單一裝置上高頻率地進行操作會觸發
+     * <a href="https://docs.djangoproject.com/es/1.10/ref/csrf/">CSRF protection</a>
+     * 保護機制。
+     * 對於需要頻繁進行操作的資料表，請考慮使用 {@link Table#Table(String, String, String, String)}。
      *
-     * @param host  資料庫位址，包含port
+     * @param host  指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
      * @param table 資料表名稱
      */
     public Table(@NonNull String host, @NonNull String table) {
@@ -96,12 +91,9 @@ public class Table {
     }
 
     /**
-     * 建立一個資料表連線實體。
-     * <p>
-     * Create a authenticated {@link Table} instance.
-     * </p>
+     * 建立一個帶授權的 {@link Table} 實體。
      *
-     * @param host     資料庫位址，包含port
+     * @param host     指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
      * @param username 登入用使用者名稱
      * @param password 登入用密碼
      * @param table    資料表名稱
@@ -111,15 +103,16 @@ public class Table {
     }
 
     /**
-     * Create a {@link Table} instance.
-     * This constructor may be more efficient since it dose not recheck parameters
+     * 以參數複製方式建立一個 {@link Table} 實體。
      *
-     * @param db    mother {@link Database}
-     * @param table table name
+     * @param db    母資料庫連接物件
+     * @param table 資料表名稱
      */
     Table(@NonNull DbCore db, @NonNull String table) {
         _core = new TableCore(db, table);
     }
+
+    /**@}*/
 
     /*
      * Override Object methods
@@ -144,10 +137,13 @@ public class Table {
      * 其他功能
      */
 
+    /**@{*/
+
     /**
      * 取得資料表結構敘述。
      *
-     * e.g. <pre>
+     * 如：
+     * \code{.json}
      * {
      *  "id": {
      *      "type": "integer",
@@ -174,10 +170,15 @@ public class Table {
      *      "read_only": true,
      *      "label": "Timestamp"
      *  }
-     * }</pre>
+     * }
+     * \endcode
      *
-     * @return 資料表結構。
-     * @throws IOException
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @return 資料表結構，如上述範例
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple getSchema() throws IOException {
         // open connection
@@ -196,19 +197,23 @@ public class Table {
         return new Tuple(_core, schema);
     }
 
+    /**@}*/
+
     /*
      * Get objects
      */
 
+    /**@{*/
+
     /**
-     * 取得資料表上的所有物件。
-     * <p>
-     * Get all items on this table.
-     * </p>
+     * 取得資料表上的所有內容。
      *
-     * @return all objects on the table, size could be 0 when table is empty
-     * @throws IOException                  table not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @return 資料表上的所有內容，當資料表為空的時候會回傳一個長度為0的陣列
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple[] get() throws IOException {
         // open connection
@@ -231,15 +236,15 @@ public class Table {
     }
 
     /**
-     * 以 {@code id} 取得資料表上的特定物件。
-     * <p>
-     * Get specific object on this table by id.
-     * </p>
+     * 以 `id` 取得資料表上的特定物件。
      *
-     * @param id object id
-     * @return the specific object
-     * @throws IOException                  object not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id 物件 `id`
+     * @return 指定的物件
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple get(int id) throws IOException {
         HttpURLConnection con = _core.openUrl(id);
@@ -250,44 +255,46 @@ public class Table {
     }
 
     /**
-     * 使用篩選器取得物件。
-     * <p>
-     * Get items by filter.
-     * </p>
-     * <p>
-     * This method can parse natural mathematical expressions into query parameters. See the following filter writing rules:
-     * <ul>
-     * <li>
-     * <strong>Full match</strong> (type: {@link String})<br/>
-     * use {@code =} or {@code ==}<br/>
-     * notice that quote is not allowed, or it will be parsed into part of matching string. i.e. <br/>
-     * {@code stringField=matching string with whitespace}<br/>
-     * {@code stringField == matching_string_without_whitespace}
-     * </li>
-     * <li>
-     * <strong>Exact equals</strong> (type: {@link Integer}, {@link Boolean})<br/>
-     * use {@code =} or {@code ==}<br/>
-     * i.e. {@code integerField=100}, {@code boolField==0}
-     * </li>
-     * <li>
-     * <strong>Inequality</strong> (type: {@link Integer}, {@link Float}, {@link Double})<br/>
-     * support symbols: {@code >}, {@code >=}, {@code <}, {@code <=}<br/>
-     * i.e. {@code floatField > 5.00}, {@code integerField<=99}
-     * </li>
-     * </ul>
-     * </p>
-     * <p>
-     * Notice that all filters is giving as {@link String} type, numeric and logical types should converted to string type before assigned.
-     * </p>
-     * <p>
-     * This method supports multiple filter querying, the result will be the intersection of given rules.
-     * To set multiple filters use commas to separate each rule. i.e. {@code get("stringField=Hello", "integerField>=99");}
-     * </p>
+     * 取得符合特定條件的物件。
      *
-     * @param filters filter rules
-     * @return items match specified rules, or null on error
-     * @throws IOException                  table not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * 可指定一個或多個過濾條件，用以篩選出指定的物件。
+     * 所有過濾條件皆需以字串形式給予，如：
+     *
+     * \code{.java}
+     * Tuple[] result1 = table.get("qty>50"); // 查詢 qty 大於 50 的清單
+     * Tuple[] result2 = table.get("pri<=2.8", "qty>50"); // 查詢 pri 小於等於 2.8 且 qty 大於 50 的清單
+     * \endcode
+     *
+     * \note
+     * 使用多個條件時回傳清單為所有條件之交集（`AND`運算），目前不支援聯集運算(`OR`運算)
+     *
+     * 現階段支援以下數種過濾條件
+     *
+     * - \b 完全比對 （適用型別： {@link String}）
+     *
+     *  使用符號： `=`, `==`
+     *
+     *  \attention
+     *  比對的字串中不允許出現引號，但允許空白
+     *
+     * - \b 完全等於 （適用型別：{@link Integer}, {@link Boolean}）
+     *
+     *  使用符號： `=`, `==`
+     *
+     *  \note
+     *  布林型別使用 `0`, `1` 而非 `True`, `False`
+     *
+     * - \b 不等式 （適用型別：{@link Integer}, {@link Float}, {@link Double}）
+     *
+     *  使用符號： `>`, `>=`, `<`, `<=`
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param filters 篩選規則
+     * @return 符合所有篩選條件的物件清單，當無物件符合時回傳長度為0的陣列
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple[] get(String... filters) throws IOException {
         // parse filters and build query string
@@ -359,19 +366,26 @@ public class Table {
         return tArray;
     }
 
+    /**@}*/
+
     /*
      * Add methods
      */
 
+    /**@{*/
+
     /**
      * 新增物件到資料表中。
-     * <p>
-     * Add an item into the table.
-     * </p>
      *
-     * @param items items to be added
-     * @throws IOException                  table not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * \remarks
+     * 此方法允許一次上傳多個 {@link Tuple}。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param items 要加入資料表的物件清單
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public void add(Tuple... items) throws IOException {
         for (Tuple tuple : items) {
@@ -391,27 +405,34 @@ public class Table {
         }
     }
 
+    /**@}*/
+
     /*
      * Update methods
      */
 
+    /**@{*/
+
     /**
      * 更新一個資料表上的項目。
-     * <p>
-     * Update an item on the table.
-     * </p>
-     * <p>
-     * This method is the full version of update function. For convenient usage, use other alias instead.
-     * </p>
      *
-     * @param id        item id to be updated.
-     * @param item      data to be updated.
-     * @param overwrite overwrite or not.
-     *                  If {@code TRUE}, all fields will be cleared and re-upload.
-     *                  If {@code FALSE}, only fields which is in {@code item} will be updated.
-     *                  NOTICE that all non-nullable field is required if {@code overwrite} is {@code TRUE}, default is {@code false}
-     * @throws IOException                  table/item not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * 參數 `overwrite` 指示是否進行完全複寫：
+     *
+     * - 若為 `True`，則所有欄位將會重置並覆寫
+     *
+     *  \warning
+     *  進行完全覆寫時，所有必要欄位（schema: `required`）皆需要提供，即使不進行更新
+     *
+     * - 若為 `False`，則僅 `item` 中所帶的欄位會被覆寫
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id        要更新的項目 `id`
+     * @param item      要更新的資料
+     * @param overwrite 是否進行完全覆寫
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public void update(int id, Tuple item, boolean overwrite) throws IOException {
         // open connection
@@ -430,19 +451,17 @@ public class Table {
     }
 
     /**
-     * 更新一個資料表上的項目。
-     * <p>
-     * 本方法為 {@link Table#update(int, Tuple, boolean)} 之短版API，其使用參數為更新第 {@link Tuple#getId()} 個項目。
-     * </p>
-     * <p>
-     * Update an item on the table.
-     * This method will update the {@link Tuple#getId()}-th item on the table.
-     * </p>
+     * 更新一個資料表上的項目。適用於當 `item` 已經帶有 `id` 時。
+     *
+     * 本函式將會更新資料表上第 {@link Tuple#getId()} 個項目，且 `overwrite` 設為 `False`
+     *
+     * \remarks
+     * 此函式會使用網路連線。
      *
      * @param item item to be updated
-     * @throws UnsupportedOperationException if item id not specified
-     * @throws IOException                   table/item not exist or network error
-     * @throws NetworkOnMainThreadException  if this method is called on main thread
+     * @throws UnsupportedOperationException `item` 沒有 `id` 欄位
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      * @see Table#update(int, Tuple, boolean)
      */
     public void update(Tuple item) throws IOException {
@@ -452,20 +471,27 @@ public class Table {
         update(item.getId(), item, false);
     }
 
+    /**@}*/
+
     /*
      * Delete methods
      */
 
+    /**@{*/
+
     /**
      * 刪除一些項目。
-     * <p>
-     * Delete an item on the table.
-     * </p>
      *
-     * @param ids id of items to be deleted
-     * @return operation success or not
-     * @throws IOException                  table/item not exist or network error
-     * @throws NetworkOnMainThreadException if this method is called on main thread
+     * \remarks
+     * 此方法允許一次刪除多個項目。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param ids 要被刪除的項目的 `id`
+     * @return 操作成功與否
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public boolean delete(int... ids) throws IOException {
         boolean isSuccess = true;
@@ -481,5 +507,7 @@ public class Table {
 
         return isSuccess;
     }
+
+    /**@}*/
 
 }
