@@ -2,8 +2,8 @@ apply plugin: 'com.android.library'
 
 def groupId = 'nctu.fintech'
 def artifactId = 'appmate'
-def code = 6
-def version = '1.2.0'
+def code = 7
+def version = '1.2.1'
 
 android {
     compileSdkVersion 22

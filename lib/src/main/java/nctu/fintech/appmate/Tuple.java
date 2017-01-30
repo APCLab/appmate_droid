@@ -224,6 +224,7 @@ public class Tuple {
             JsonElement element = p.getValue();
             if (!(element instanceof JsonPrimitive)) {
                 map.put(p.getKey(), element.toString());
+                continue;
             }
 
             JsonPrimitive primitive = (JsonPrimitive) element;
