@@ -27,12 +27,20 @@ public class Core {
     /**
      * a {@link URL} refer to the specific resource
      */
-    private URL mRoot;
+    public final URL root;
 
     /**
      * the string to set as authentication header if needed
      */
     private String mAuth;
+
+    /**
+     * return whether use authentication or not
+     * @return use authentication or not
+     */
+    public boolean isUseAuth() {
+        return mAuth == null;
+    }
 
     /**
      * create a core instance
@@ -44,7 +52,7 @@ public class Core {
         root_url = prettifyUrl(root_url);
 
         try {
-            mRoot = new URL(root_url);
+            root = new URL(root_url);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("not a valid url", e);
         }
@@ -56,8 +64,24 @@ public class Core {
      * @param other other core instance
      */
     public Core(Core other) {
-        this.mRoot = other.mRoot;
+        this.root = other.root;
         this.mAuth = other.mAuth;
+    }
+
+    /**
+     * copy core instance and change directory
+     *
+     * @param other other core instance
+     */
+    public Core(Core other, String path) {
+        path = prettifyUrl(path);
+        this.mAuth = other.mAuth;
+
+        try {
+            root = new URL(other.root, path);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("not a valid url", e);
+        }
     }
 
     /**
@@ -81,14 +105,7 @@ public class Core {
      * @throws MalformedURLException
      */
     public Core cd(String path) {
-        path = prettifyUrl(path);
-
-        try {
-            mRoot = new URL(mRoot, path);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("not a valid url", e);
-        }
-        return this;
+        return new Core(this, path);
     }
 
     /**
@@ -124,7 +141,7 @@ public class Core {
                     .addHeader("Accept", "application/json")
                     .addHeader("Accept-charset", "utf-8");
 
-            if (mAuth != null) {
+            if (isUseAuth()) {
                 mBuilder.addHeader("Authorization", mAuth);
             }
         }
@@ -203,7 +220,12 @@ public class Core {
      * @return a {@link Connection} instance refer to the root of this {@link Core}
      */
     public Connection createConnection() {
-        return new Connection(mRoot);
+        return new Connection(root);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("CoreObject(%s)>", root);
     }
 
 }
