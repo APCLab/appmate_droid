@@ -5,15 +5,11 @@ import android.support.annotation.NonNull;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
-import static nctu.fintech.appmate.DbCore.getResponse;
+import nctu.fintech.appmate.core.Core;
 
 /**
  * 指向資料庫的連接物件，本類別適用於須存取多個 {@link Table} 時方便建立連線之用。
@@ -39,40 +35,7 @@ public class Database {
      * Global variables
      */
 
-    private final DbCore _core;
-
-    /*
-     * read-only fields returning
-     */
-
-    /** @name 屬性查詢
-     * @{*/
-
-    /**
-     * 取得是否使用授權。
-     * <p>
-     * 本函式回傳此物件內登記為使用授權（需要登入）與否，
-     * 此屬性來自物件建構時依輸入參數所做之判斷，並不代表資料庫端認定需要登入與否。
-     *
-     * @return 使用授權與否
-     */
-    public boolean isAuth() {
-        return _core.useAuth;
-    }
-
-    /**
-     * 取得使用者名稱。
-     * <p>
-     * 本函式回傳此物件內登記的使用者名稱，
-     * 此屬性來自物件建構時依輸入參數所做之判斷，並不代表資料庫端認定該使用者存在與否。
-     *
-     * @return 使用者名稱，當此資料庫為不使用授權時，回傳 `null`
-     */
-    public String getUserName() {
-        return _core.username;
-    }
-
-    /**@}*/
+    final Core mCore;
 
     /*
      * constructors
@@ -92,8 +55,8 @@ public class Database {
      *
      * @param host 指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
      */
-    public Database(@NonNull String host) {
-        _core = new DbCore(host);
+    public Database(@NonNull String api_root) {
+            mCore = new Core(api_root);
     }
 
     /**
@@ -103,8 +66,9 @@ public class Database {
      * @param username 登入所使用的使用者名稱
      * @param password 登入所使用的密碼
      */
-    public Database(@NonNull String host, @NonNull String username, @NonNull String password) {
-        _core = new DbCore(host, username, password);
+    public Database(@NonNull String api_root, @NonNull String username, @NonNull String password) {
+            mCore = new Core(api_root)
+                    .useAuth(username, password);
     }
 
     /**
@@ -112,30 +76,11 @@ public class Database {
      *
      * @param core 另一個 {@link Database}
      */
-    Database(DbCore core) {
-        this._core = core;
+    Database(Core core) {
+        this.mCore = new Core(core);
     }
 
     /**@}*/
-
-    /*
-     * Override Object methods
-     */
-
-    @Override
-    public String toString() {
-        return String.format("Database{%s}", _core.url.getHost());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Database && this._core.equals(((Database) obj)._core);
-    }
-
-    @Override
-    public int hashCode() {
-        return _core.hashCode();
-    }
 
     /*
      * members
@@ -153,7 +98,7 @@ public class Database {
      * @return 資料表連節器
      */
     public Table getTable(@NonNull String table) {
-        return new Table(_core, table);
+        return new Table(this, table);
     }
 
     /**
@@ -167,22 +112,19 @@ public class Database {
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public String[] getTableNames() throws IOException {
-        // open connection
-        HttpURLConnection con = _core.openUrl();
-
-        // downstream & parse
-        JsonObject tables = new JsonParser()
-                .parse(getResponse(con))
-                .getAsJsonObject();
+        JsonObject tables = mCore.createConnection()
+                .method("GET")
+                .getResponseAsJson();
 
         // retrieve result
-        List<String> names = new LinkedList<>();
+        String[] names = new String[tables.size()];
+        int idx = 0;
+
         for (Map.Entry<String, JsonElement> pair : tables.entrySet()) {
-            names.add(pair.getKey());
+            names[idx++] = pair.getKey();
         }
 
-        // return
-        return names.toArray(new String[tables.size()]);
+        return names;
     }
 
     /**
@@ -199,7 +141,7 @@ public class Database {
         String[] names = getTableNames();
         Table[] tables = new Table[names.length];
         for (int i = 0; i < names.length; i++) {
-            tables[i] = new Table(_core, names[i]);
+            tables[i] = new Table(this, names[i]);
         }
         return tables;
     }
