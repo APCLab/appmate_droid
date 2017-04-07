@@ -9,6 +9,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import nctu.fintech.appmate.core.Core;
 
@@ -23,11 +27,10 @@ import nctu.fintech.appmate.core.Core;
  */
 public class Table {
 
-//    /*
-//     * Constant define
-//     */
-//
-//    private static final String DEFAULT_CHARSET = "utf-8";
+    /*
+     * Constant define
+     */
+    private static final String DEFAULT_CHARSET = "utf-8";
 
     /*
      * Global variables
@@ -243,117 +246,131 @@ public class Table {
         );
     }
 
-//    /**
-//     * 取得符合特定條件的物件。
-//     *
-//     * 可指定一個或多個過濾條件，用以篩選出指定的物件。
-//     * 所有過濾條件皆需以字串形式給予，如：
-//     *
-//     * \code{.java}
-//     * Tuple[] result1 = table.get("qty>50"); // 查詢 qty 大於 50 的清單
-//     * Tuple[] result2 = table.get("pri<=2.8", "qty>50"); // 查詢 pri 小於等於 2.8 且 qty 大於 50 的清單
-//     * \endcode
-//     *
-//     * \note
-//     * 使用多個條件時回傳清單為所有條件之交集（`AND`運算），目前不支援聯集運算(`OR`運算)
-//     *
-//     * 現階段支援以下數種過濾條件
-//     *
-//     * - \b 完全比對 （適用型別： {@link String}）
-//     *
-//     *  使用符號： `=`, `==`
-//     *
-//     *  \attention
-//     *  比對的字串中不允許出現引號，但允許空白
-//     *
-//     * - \b 完全等於 （適用型別：{@link Integer}, {@link Boolean}）
-//     *
-//     *  使用符號： `=`, `==`
-//     *
-//     *  \note
-//     *  布林型別使用 `0`, `1` 而非 `True`, `False`
-//     *
-//     * - \b 不等式 （適用型別：{@link Integer}, {@link Float}, {@link Double}）
-//     *
-//     *  使用符號： `>`, `>=`, `<`, `<=`
-//     *
-//     * \remarks
-//     * 此函式會使用網路連線。
-//     *
-//     * @param filters 篩選規則
-//     * @return 符合所有篩選條件的物件清單，當無物件符合時回傳長度為0的陣列
-//     * @throws IOException                  資料表不存在，或網路錯誤
-//     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
-//     */
-//    public Tuple[] get(String... filters) throws IOException {
-//        // parse filters and build query string
-//        Pattern pattern = Pattern.compile("(?<field>\\w+)\\s?(?<sym>=|==|>|>=|<|<=)\\s?(?<value>.+)");
-//        StringBuilder builder = new StringBuilder("./?");
-//
-//        for (String f : filters) {
-//            // parse filter
-//            Map<String, String> match = pattern
-//                    .matcher(f)
-//                    .namedGroups();
-//
-//            // break on filter not match
-//            if (match.isEmpty()) {
-//                continue;
-//            }
-//
-//            // retrieve each part
-//            String field = URLEncoder.encode(match.get("field"), DEFAULT_CHARSET);
-//            String value = URLEncoder.encode(match.get("value"), DEFAULT_CHARSET);
-//
-//            // select query parameter format by symbol
-//            switch (match.get("sym")) {
-//                case "=":
-//                case "==":
-//                    // do nothing
-//                    break;
-//                case ">":
-//                    field += "__gt";
-//                    break;
-//                case ">=":
-//                    field += "__gte";
-//                    break;
-//                case "<":
-//                    field += "__lt";
-//                    break;
-//                case "<=":
-//                    field += "__lte";
-//                    break;
-//            }
-//
-//            // build query string
-//            if (builder.length() > 1) {
-//                builder.append("&");
-//            }
-//
-//            // append
-//            builder.append(field);
-//            builder.append("=");
-//            builder.append(value);
-//        }
-//
-//        // open connection
-//        HttpURLConnection con = _core.openUrl(builder.toString());
-//
-//        // downstream & parse
-//        JsonArray jArray = new JsonParser()
-//                .parse(getResponse(con))
-//                .getAsJsonArray();
-//
-//        // build
-//        int len = jArray.size();
-//        Tuple[] tArray = new Tuple[len];
-//        for (int i = 0; i < len; i++) {
-//            tArray[i] = new Tuple(_core, jArray.get(i).getAsJsonObject());
-//        }
-//
-//        // return
-//        return tArray;
-//    }
+    /**
+     * 以 `id` 取得資料表上的特定物件。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id 物件 `id`
+     * @return 指定的物件
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public Tuple get(int id) throws IOException {
+        return get(String.valueOf(id));
+    }
+
+    /**
+     * 取得符合特定條件的物件。
+     *
+     * 可指定一個或多個過濾條件，用以篩選出指定的物件。
+     * 所有過濾條件皆需以字串形式給予，如：
+     *
+     * \code{.java}
+     * Tuple[] result1 = table.get("qty>50"); // 查詢 qty 大於 50 的清單
+     * Tuple[] result2 = table.get("pri<=2.8", "qty>50"); // 查詢 pri 小於等於 2.8 且 qty 大於 50 的清單
+     * \endcode
+     *
+     * \note
+     * 使用多個條件時回傳清單為所有條件之交集（`AND`運算），目前不支援聯集運算(`OR`運算)
+     *
+     * 現階段支援以下數種過濾條件
+     *
+     * - \b 完全比對 （適用型別： {@link String}）
+     *
+     *  使用符號： `=`, `==`
+     *
+     *  \attention
+     *  比對的字串中不允許出現引號，但允許空白
+     *
+     * - \b 完全等於 （適用型別：{@link Integer}, {@link Boolean}）
+     *
+     *  使用符號： `=`, `==`
+     *
+     *  \note
+     *  布林型別使用 `0`, `1` 而非 `True`, `False`
+     *
+     * - \b 不等式 （適用型別：{@link Integer}, {@link Float}, {@link Double}）
+     *
+     *  使用符號： `>`, `>=`, `<`, `<=`
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param filters 篩選規則
+     * @return 符合所有篩選條件的物件清單，當無物件符合時回傳長度為0的陣列
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public Tuple[] get(String... filters) throws IOException {
+        // parse filters and build query string
+        Pattern pattern = Pattern.compile("(\\w+)\\s?(=|==|>|>=|<|<=)\\s?(.+)");
+        StringBuilder builder = new StringBuilder("./?");
+
+        for (String f : filters) {
+            // parse filter
+            Matcher match = pattern
+                    .matcher(f);
+
+            // break on filter not match
+            if (!match.matches()) {
+                continue;
+            }
+
+            // retrieve each part
+            String field = URLEncoder.encode(match.group(0), DEFAULT_CHARSET);
+            String value = URLEncoder.encode(match.group(2), DEFAULT_CHARSET);
+
+            // select query parameter format by symbol
+            switch (match.group(1)) {
+                case "=":
+                case "==":
+                    // do nothing
+                    break;
+                case ">":
+                    field += "__gt";
+                    break;
+                case ">=":
+                    field += "__gte";
+                    break;
+                case "<":
+                    field += "__lt";
+                    break;
+                case "<=":
+                    field += "__lte";
+                    break;
+            }
+
+            // build query string
+            if (builder.length() > 1) {
+                builder.append("&");
+            }
+
+            // append
+            builder.append(field);
+            builder.append("=");
+            builder.append(value);
+        }
+
+        // downstream & parse
+        JsonArray jArray = new JsonParser()
+                .parse(mCore.cd(builder.toString())
+                        .createConnection()
+                        .getResponse()
+                )
+                .getAsJsonArray();
+
+        // build
+        Tuple[] tArray = new Tuple[jArray.size()];
+        int idx = 0;
+        for (JsonElement e : jArray) {
+            tArray[idx++] = new Tuple(this, e.getAsJsonObject());
+        }
+
+        // return
+        return tArray;
+    }
 
     /**@}*/
 
