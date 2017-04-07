@@ -39,7 +39,7 @@ public class Core {
      * @return use authentication or not
      */
     public boolean isUseAuth() {
-        return mAuth == null;
+        return mAuth != null;
     }
 
     /**
@@ -223,9 +223,14 @@ public class Core {
         return new Connection(root);
     }
 
+    /**
+     * return resource url string.
+     *
+     * @return url string
+     */
     @Override
     public String toString() {
-        return String.format("CoreObject(%s)>", root);
+        return root.toString();
     }
 
 }

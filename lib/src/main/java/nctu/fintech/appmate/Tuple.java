@@ -587,9 +587,9 @@ public class Tuple {
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
         for (Map.Entry<String, JsonElement> pair : mData.entrySet()) {
-            JsonElement element = pair.getValue();
+            JsonPrimitive element = (JsonPrimitive) pair.getValue();
             String key = pair.getKey();
-            String value = element.toString();
+            String value = element.isString() ? element.getAsString() : element.toString();
 
             if (mImages.containsKey(element)) { // the element indicate to a image
                 // get image
