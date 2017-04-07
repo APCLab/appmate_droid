@@ -1,0 +1,25 @@
+/*!
+\page get-start 開始使用！
+
+\section 最低要求
+
+API Level 19 (即 Android 4.4 [KITKAT] 以上版本始支援)
+
+\section 使用權限
+
+本函式庫使用網路，請註冊 `android.permission.INTERNET` 權限
+
+\section 安裝
+
+本函式庫藉由 [jCenter] 發布，Android Studio 使用者僅需在 `build.gradle` 中新增以下幾行即可
+
+```
+dependencies {
+    compile 'nctu.fintech:appmate:1.2'
+}
+```
+
+[KITKAT]: https://developer.android.com/about/versions/android-4.4.html
+[jCenter]: https://bintray.com/apclab/appmate/appmate/_latestVersion
+
+*/
