@@ -1,0 +1,18 @@
+/*!
+\mainpage Appmate Droid 說明文件
+
+本函式庫為 [appmate] 的 Android 端接口。
+
+- \subpage get-start
+- \subpage introduction
+- [瀏覽物件列表](annotated.html)
+
+\section 錯誤回報
+
+請開 [issue]
+
+
+<!--分隔線: 連結清單-->
+[appmate]: https://github.com/APCLab/appmate
+[issue]: https://github.com/APCLab/appmate_droid/issues
+*/
