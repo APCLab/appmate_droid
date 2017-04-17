@@ -413,50 +413,39 @@ public class Tuple {
         );
     }
 
-//    /**
-//     * 取得值所指向的圖片。
-//     * <p>
-//     * \attention
-//     * 此方法需要使用連線相關參數，當此物件為自行建立、而非自資料表回傳時，此函式無法作用。
-//     * <p>
-//     * \remarks
-//     * 此函式會使用網路連線。
-//     *
-//     * @param key 欄位名
-//     * @return 該值對應的外來鍵物件
-//     * @throws ClassCastException            當該值無法被視為圖片資源
-//     * @throws UnsupportedOperationException 當該值所指向的資源不在同一個資料庫中
-//     * @throws IOException                   資源不存在，或網路錯誤
-//     * @throws NetworkOnMainThreadException  在主執行緒上使用此函式
-//     */
-//    public Bitmap getAsBitmap(String key) throws IOException {
-//        // local operation
-//        if (_img.containsKey(key)) {
-//            return _img.get(key);
-//        }
-//
-//        // check domain
-//        URL url = new URL(mData.get(key).getAsString());
-//        if (!url.getHost().equals(_core.url.getHost())) {
-//            throw new UnsupportedOperationException("cross domain query not supported");
-//        }
-//
-//        // create connection
-//        HttpURLConnection con = _core.openUrl(url);
-//
-//        // check response code
-//        int code = con.getResponseCode(); //TODO merge this to DbCore
-//        if (code != HttpURLConnection.HTTP_OK) {
-//            Log.e(getClass().getName(), "unexpected HTTP response code received: " + code);
-//        }
-//
-//        // read response
-//        try (InputStream input = con.getInputStream()) {
-//            Bitmap bitmap = BitmapFactory.decodeStream(input);
-//            _img.put(key, bitmap); //TODO 建立欄位修改紀錄，簡化上傳量
-//            return bitmap;
-//        }
-//    }
+    /**
+     * 取得值所指向的圖片。
+     * <p>
+     * \attention
+     * 此方法需要使用連線相關參數，當此物件為自行建立、而非自資料表回傳時，此函式無法作用。
+     * <p>
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param key 欄位名
+     * @return 該值對應的外來鍵物件
+     * @throws ClassCastException            當該值無法被視為圖片資源
+     * @throws UnsupportedOperationException 當該值所指向的資源不在同一個資料庫中
+     * @throws IOException                   資源不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException  在主執行緒上使用此函式
+     */
+    public Bitmap getAsBitmap(String key) throws IOException {
+        // local operation
+        JsonElement elem = getElem(key);
+        if (mImages.containsKey(elem)) {
+            return mImages.get(elem);
+        }
+
+        // get url
+        URL url = new URL(get(key));
+
+        // read response
+        try (InputStream input = getCore().createConnection(url).getResponseStream()) {
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+            mImages.put(elem, bitmap); //TODO 建立欄位修改紀錄，簡化上傳量
+            return bitmap;
+        }
+    }
 
     /**@}*/
 

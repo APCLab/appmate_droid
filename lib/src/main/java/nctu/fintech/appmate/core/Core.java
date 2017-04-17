@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -165,6 +167,31 @@ public class Core {
         public Connection method(String method, RequestBody body) {
             mBuilder.method(method, body);
             return this;
+        }
+
+
+        /**
+             * get response input stream
+             *
+             * @return stream object
+             * @throws IOException
+             */
+        public InputStream getResponseStream() throws IOException {
+            assert mBuilder != null;
+
+            // build request
+            Request request = mBuilder.build();
+            mBuilder = null;
+
+            // get response
+            Response response = mClient.newCall(request).execute();
+
+            // handle result
+            if (!response.isSuccessful()) {
+                throw new UnexpectedResponseException(response.code(), response.message(), null);
+            }
+
+            return response.body().byteStream();
         }
 
         /**
