@@ -3,24 +3,21 @@ package nctu.fintech.appmate;
 import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
 
-import com.google.code.regexp.Pattern;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URLEncoder;
-import java.util.Map;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static nctu.fintech.appmate.DbCore.getResponse;
-import static nctu.fintech.appmate.DbCore.sendRequest;
+import nctu.fintech.appmate.core.Core;
 
 /**
  * 指向資料表的連接物件。
- *
- * \note
- * 此物件為指向 `http://<host>/api/<table name>/`
  *
  * \remarks
  * 建立 {@link Table} 實體(instance)時候並不會建立網路連線。
@@ -30,42 +27,14 @@ public class Table {
     /*
      * Constant define
      */
-
     private static final String DEFAULT_CHARSET = "utf-8";
 
     /*
      * Global variables
      */
-    private final TableCore _core;
-    private Database _parent;
-
-    /*
-     * Read-only properties
-     */
-
-    /**@{*/
-
-    /**
-     * 取得資料表名稱。
-     *
-     * @return 資料表名稱
-     */
-    public String getTableName() {
-        return _core.tableName;
-    }
-
-    /**
-     * 取得取得母資料庫接口。
-     *
-     * @return 包含此資料表的資料庫連接物件
-     */
-    public Database getDatabase() {
-        return _parent == null
-                ? (_parent = new Database(_core))
-                : _parent;
-    }
-
-    /**@}*/
+    final Core mCore;
+    public final String name;
+    public final Database parent;
 
     /*
      * Constructors
@@ -83,54 +52,69 @@ public class Table {
      * 保護機制。
      * 對於需要頻繁進行操作的資料表，請考慮使用 {@link Table#Table(String, String, String, String)}。
      *
-     * @param host  指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot `api root` 所在位置（ **非** 表格路徑），須包含傳輸阜，如：`http://example:8000/api/`
      * @param table 資料表名稱
      */
-    public Table(@NonNull String host, @NonNull String table) {
-        _core = new TableCore(host, table);
+    public Table(@NonNull String apiRoot, @NonNull String table) {
+        this.parent = new Database(new Core(apiRoot));
+        this.name = trimString(table);
+        this.mCore = parent
+                .mCore
+                .cd(this.name);
     }
 
     /**
      * 建立一個帶授權的 {@link Table} 實體。
      *
-     * @param host     指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot `api root` 所在位置（ **非** 表格路徑），須包含傳輸阜，如：`http://example:8000/api/`
      * @param username 登入用使用者名稱
      * @param password 登入用密碼
      * @param table    資料表名稱
      */
-    public Table(@NonNull String host, @NonNull String username, @NonNull String password, @NonNull String table) {
-        _core = new TableCore(host, username, password, table);
+    public Table(@NonNull String apiRoot, @NonNull String table, @NonNull String username, @NonNull String password) {
+        this.parent = new Database(
+                new Core(apiRoot)
+                        .useAuth(username, password)
+        );
+
+        this.name = trimString(table);
+        this.mCore = parent
+                .mCore
+                .cd(this.name);
     }
 
     /**
-     * 以參數複製方式建立一個 {@link Table} 實體。
+     * 自母資料庫建立表格連結。
      *
-     * @param db    母資料庫連接物件
-     * @param table 資料表名稱
+     * @param database 母資料庫
+     * @param table 表格名稱
      */
-    Table(@NonNull DbCore db, @NonNull String table) {
-        _core = new TableCore(db, table);
+    public Table(@NonNull Database database, @NonNull String table) {
+        this.parent = database;
+        this.name = trimString(table);
+        this.mCore = parent
+                .mCore
+                .cd(this.name);
+    }
+
+    /**
+     * (assist func for constructor) trim input string.
+     * @param string string
+     * @return trimmed string
+     */
+    @NonNull
+    private static String trimString(@NonNull String string) {
+        return string
+                .replace("/", "")
+                .replace("\\", "")
+                .trim();
     }
 
     /**@}*/
 
-    /*
-     * Override Object methods
-     */
-
     @Override
     public String toString() {
-        return String.format("Table{%s@%s}", _core.tableName, _core.url.getHost());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Table && _core.equals(((Table) obj)._core);
-    }
-
-    @Override
-    public int hashCode() {
-        return _core.hashCode();
+        return String.format(Locale.getDefault(), "table %s @", name, mCore.root);
     }
 
     /*
@@ -181,20 +165,14 @@ public class Table {
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple getSchema() throws IOException {
-        // open connection
-        HttpURLConnection con = _core.openUrl();
-        con.setRequestMethod("OPTION");
-
-        // downstream & parse
-        JsonObject schema = new JsonParser()
-                .parse(getResponse(con))
-                .getAsJsonObject()
+        JsonObject schema = mCore.createConnection()
+                .method("OPTION")
+                .getResponseAsJson()
                 .get("actions")
                 .getAsJsonObject()
                 .get("POST")
-                .getAsJsonObject(); //TODO 使用xpath-like方式解決
-
-        return new Tuple(_core, schema);
+                .getAsJsonObject();
+        return new Tuple(this, schema);
     }
 
     /**@}*/
@@ -216,19 +194,16 @@ public class Table {
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple[] get() throws IOException {
-        // open connection
-        HttpURLConnection con = _core.openUrl();
-
         // downstream & parse
         JsonArray jArray = new JsonParser()
-                .parse(getResponse(con))
+                .parse(mCore.createConnection().getResponse())
                 .getAsJsonArray();
 
         // build
-        int len = jArray.size();
-        Tuple[] tArray = new Tuple[len];
-        for (int i = 0; i < len; i++) {
-            tArray[i] = new Tuple(_core, jArray.get(i).getAsJsonObject());
+        Tuple[] tArray = new Tuple[jArray.size()];
+        int idx = 0;
+        for (JsonElement e : jArray) {
+            tArray[idx++] = new Tuple(this, e.getAsJsonObject());
         }
 
         // return
@@ -236,7 +211,26 @@ public class Table {
     }
 
     /**
-     * 以 `id` 取得資料表上的特定物件。
+     * 以主鍵取得表格上之物件
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param primaryKey 主鍵
+     * @return 指定的物件
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public Tuple get(String primaryKey) throws IOException {
+        return new Tuple(this, mCore
+                .cd(primaryKey)
+                .createConnection()
+                .getResponseAsJson()
+        );
+    }
+
+    /**
+     * 以 `id` 取得資料表上的特定物件。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
      *
      * \remarks
      * 此函式會使用網路連線。
@@ -247,11 +241,7 @@ public class Table {
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public Tuple get(int id) throws IOException {
-        HttpURLConnection con = _core.openUrl(id);
-        JsonObject obj = new JsonParser()
-                .parse(getResponse(con))
-                .getAsJsonObject();
-        return new Tuple(_core, obj);
+        return get(String.valueOf(id));
     }
 
     /**
@@ -298,26 +288,25 @@ public class Table {
      */
     public Tuple[] get(String... filters) throws IOException {
         // parse filters and build query string
-        Pattern pattern = Pattern.compile("(?<field>\\w+)\\s?(?<sym>=|==|>|>=|<|<=)\\s?(?<value>.+)");
+        Pattern pattern = Pattern.compile("(\\w+)\\s?(=|==|>|>=|<|<=)\\s?(.+)");
         StringBuilder builder = new StringBuilder("./?");
 
         for (String f : filters) {
             // parse filter
-            Map<String, String> match = pattern
-                    .matcher(f)
-                    .namedGroups();
+            Matcher match = pattern
+                    .matcher(f);
 
             // break on filter not match
-            if (match.isEmpty()) {
+            if (!match.matches()) {
                 continue;
             }
 
             // retrieve each part
-            String field = URLEncoder.encode(match.get("field"), DEFAULT_CHARSET);
-            String value = URLEncoder.encode(match.get("value"), DEFAULT_CHARSET);
+            String field = URLEncoder.encode(match.group(0), DEFAULT_CHARSET);
+            String value = URLEncoder.encode(match.group(2), DEFAULT_CHARSET);
 
             // select query parameter format by symbol
-            switch (match.get("sym")) {
+            switch (match.group(1)) {
                 case "=":
                 case "==":
                     // do nothing
@@ -347,19 +336,19 @@ public class Table {
             builder.append(value);
         }
 
-        // open connection
-        HttpURLConnection con = _core.openUrl(builder.toString());
-
         // downstream & parse
         JsonArray jArray = new JsonParser()
-                .parse(getResponse(con))
+                .parse(mCore.cd(builder.toString())
+                        .createConnection()
+                        .getResponse()
+                )
                 .getAsJsonArray();
 
         // build
-        int len = jArray.size();
-        Tuple[] tArray = new Tuple[len];
-        for (int i = 0; i < len; i++) {
-            tArray[i] = new Tuple(_core, jArray.get(i).getAsJsonObject());
+        Tuple[] tArray = new Tuple[jArray.size()];
+        int idx = 0;
+        for (JsonElement e : jArray) {
+            tArray[idx++] = new Tuple(this, e.getAsJsonObject());
         }
 
         // return
@@ -388,20 +377,12 @@ public class Table {
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public void add(Tuple... items) throws IOException {
-        for (Tuple tuple : items) {
-            // open connection
-            HttpURLConnection con = _core.openUrl();
-            con.setRequestMethod("POST");
-
-            // upstream
-            sendRequest(con, tuple);
-
-            // downstream
-            JsonObject obj = new JsonParser()
-                    .parse(getResponse(con))
-                    .getAsJsonObject();
-
-            tuple.reset(_core, obj);
+        for (Tuple item : items) {
+            item.reset(this, mCore
+                    .createConnection()
+                    .method("POST", item.toRequestBody())
+                    .getResponseAsJson()
+            );
         }
     }
 
@@ -416,60 +397,104 @@ public class Table {
     /**
      * 更新一個資料表上的項目。
      *
-     * 參數 `overwrite` 指示是否進行完全複寫：
+     * \remarks
+     * 此函式會使用網路連線。
      *
-     * - 若為 `True`，則所有欄位將會重置並覆寫
-     *
-     *  \warning
-     *  進行完全覆寫時，所有必要欄位（schema: `required`）皆需要提供，即使不進行更新
-     *
-     * - 若為 `False`，則僅 `item` 中所帶的欄位會被覆寫
+     * @param primaryKey      要更新的項目的主鍵
+     * @param item                  要更新的資料
+     * @param overwrite          是否進行完全覆寫， `False` 時候僅 `item` 內所帶的欄位會被修正
+     * @throws IOException    資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void update(String primaryKey, Tuple item, boolean overwrite) throws IOException {
+        mCore.cd(primaryKey)
+                .createConnection()
+                .method(overwrite ? "PUT" : "PATCH", item.toRequestBody())
+                .getResponse();
+    }
+
+    /**
+     * 更新一個資料表上的項目。
      *
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param id        要更新的項目 `id`
+     * @param id        要被更新的項目。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
      * @param item      要更新的資料
      * @param overwrite 是否進行完全覆寫
      * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public void update(int id, Tuple item, boolean overwrite) throws IOException {
-        // open connection
-        HttpURLConnection con = _core.openUrl(id);
-        con.setRequestMethod(overwrite ? "PUT" : "PATCH");
-
-        // upstream
-        sendRequest(con, item);
-
-        // downstream
-        JsonObject obj = new JsonParser()
-                .parse(getResponse(con))
-                .getAsJsonObject();
-
-        item.reset(_core, obj);
+        update(String.valueOf(id), item, overwrite);
     }
 
     /**
-     * 更新一個資料表上的項目。適用於當 `item` 已經帶有 `id` 時。
+     * 更新一個資料表上的項目。
+     * 本函式僅更新 `item` 下帶著的內容。
      *
-     * 本函式將會更新資料表上第 {@link Tuple#getId()} 個項目，且 `overwrite` 設為 `False`
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param primaryKey        要更新的項目的主鍵
+     * @param item      要更新的資料
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void update(String primaryKey, Tuple item) throws IOException {
+        update(primaryKey, item, false);
+    }
+
+    /**
+     * 更新一個資料表上的項目。
+     * 本函式僅更新 `item` 下帶著的內容。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id        要被更新的項目。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
+     * @param item      要更新的資料
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void update(int id, Tuple item) throws IOException {
+        update(String.valueOf(id), item, false);
+    }
+
+    /**
+     * 更新一個資料表上的項目。適用於當 `item` 已經帶有主鍵時。
+     * 本函式僅更新 `item` 下帶著的內容。
      *
      * \remarks
      * 此函式會使用網路連線。
      *
      * @param item item to be updated
-     * @throws UnsupportedOperationException `item` 沒有 `id` 欄位
+     * @param overwrite 是否進行完全覆寫
+     * @throws UnsupportedOperationException `item` 沒有主鍵
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     * @see Table#update(int, Tuple, boolean)
+     */
+    public void update(Tuple item, boolean overwrite)throws IOException {
+        update(item.getPrimaryKey(), item, overwrite);
+    }
+
+    /**
+     * 更新一個資料表上的項目。適用於當 `item` 已經帶有主鍵時。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param item item to be updated
+     * @throws UnsupportedOperationException `item` 沒有主鍵
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      * @see Table#update(int, Tuple, boolean)
      */
     public void update(Tuple item) throws IOException {
-        if (item.getId() == -1) {
-            throw new UnsupportedOperationException("item id not specified");
-        }
-        update(item.getId(), item, false);
+        update(item.getPrimaryKey(), item, false);
     }
+
 
     /**@}*/
 
@@ -488,24 +513,36 @@ public class Table {
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param ids 要被刪除的項目的 `id`
-     * @return 操作成功與否
+     * @param ids 要被刪除的項目的 `id`，在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
-    public boolean delete(int... ids) throws IOException {
-        boolean isSuccess = true;
-
+    public void delete(int... ids) throws IOException {
         for (int id : ids) {
-            // open connection
-            HttpURLConnection con = _core.openUrl(id);
-            con.setRequestMethod("DELETE");
-
-            // check result
-            isSuccess &= con.getResponseCode() == HttpURLConnection.HTTP_NO_CONTENT;
+            delete(String.valueOf(id));
         }
+    }
 
-        return isSuccess;
+    /**
+     * 刪除一些項目。
+     *
+     * \remarks
+     * 此方法允許一次刪除多個項目。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param primaryKeys 要被刪除的項目的主鍵
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void delete(String... primaryKeys) throws IOException {
+        for (String key : primaryKeys) {
+            mCore.cd(key)
+                    .createConnection()
+                    .method("DELETE")
+                    .getResponse();
+        }
     }
 
     /**@}*/
