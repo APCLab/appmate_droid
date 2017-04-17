@@ -15,7 +15,7 @@ API Level 19 (即 Android 4.4 [KITKAT] 以上版本始支援)
 
 ```
 dependencies {
-    compile 'nctu.fintech:appmate:1.2'
+    compile 'nctu.fintech:appmate:1.3.0'
 }
 ```
 
