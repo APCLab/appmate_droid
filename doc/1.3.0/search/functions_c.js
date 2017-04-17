@@ -1,0 +1,7 @@
+var searchData=
+[
+  ['table',['Table',['../d5/dff/classnctu_1_1fintech_1_1appmate_1_1_table.html#a229714ea0eb4f661c2724cba1243bc7d',1,'nctu.fintech.appmate.Table.Table(@NonNull String apiRoot, @NonNull String table)'],['../d5/dff/classnctu_1_1fintech_1_1appmate_1_1_table.html#a4f75b571514de8bb642faf23edb851d4',1,'nctu.fintech.appmate.Table.Table(@NonNull String apiRoot, @NonNull String table, @NonNull String username, @NonNull String password)'],['../d5/dff/classnctu_1_1fintech_1_1appmate_1_1_table.html#afc1cb66028d20b72a141f94cacd6c461',1,'nctu.fintech.appmate.Table.Table(@NonNull Database database, @NonNull String table)']]],
+  ['tojsonobject',['toJsonObject',['../db/daa/classnctu_1_1fintech_1_1appmate_1_1_tuple.html#aa935ec54b865a4300a3edd7099b4ea8c',1,'nctu.fintech.appmate.Tuple.toJsonObject()'],['../db/daa/classnctu_1_1fintech_1_1appmate_1_1_tuple.html#aa863c488eeeea451a9fa3ce38aa42891',1,'nctu.fintech.appmate.Tuple.toJSONObject()']]],
+  ['tostring',['toString',['../d8/db9/classnctu_1_1fintech_1_1appmate_1_1core_1_1_core.html#ad146fa8579a5f8a876c4688cc5a68520',1,'nctu.fintech.appmate.core.Core.toString()'],['../db/daa/classnctu_1_1fintech_1_1appmate_1_1_tuple.html#ad146fa8579a5f8a876c4688cc5a68520',1,'nctu.fintech.appmate.Tuple.toString()']]],
+  ['tuple',['Tuple',['../db/daa/classnctu_1_1fintech_1_1appmate_1_1_tuple.html#a4766c7b239a3a6c3980f7e84d5439377',1,'nctu::fintech::appmate::Tuple']]]
+];
