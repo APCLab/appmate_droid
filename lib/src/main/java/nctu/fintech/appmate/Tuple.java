@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -17,7 +16,6 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,15 +24,12 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import nctu.fintech.appmate.core.Core;
-import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
-import okio.BufferedSink;
 
 /**
  * 值組，資料的基礎型別。
@@ -47,12 +42,8 @@ public class Tuple {
     /*
      * Constants
      */
-
-    private final static String DATE_FORMAT = "yyyy-MM-dd";
-    private final static String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
-    private final static int INDEX_TABLE_NAME = 2;
-    private final static int INDEX_ITEM_ID = 3;
-    private final static String PREFIX_IMG = "IMG";
+    private final static SimpleDateFormat mDateFormatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    private final static SimpleDateFormat mDatetimeFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
 
     /*
      * Global variables
@@ -73,11 +64,15 @@ public class Tuple {
      */
     private Map<JsonElement, Bitmap> mImages;
 
-    Core getCore() {
+   private Core getCore() {
         if (mCore == null) {
             mCore = new Core(mTable.mCore, getPrimaryKey());
         }
         return mCore;
+    }
+
+   private JsonPrimitive getElem(String key) {
+        return (JsonPrimitive) mData.get(key);
     }
 
     /**
@@ -91,7 +86,7 @@ public class Tuple {
             return mPrimaryKey;
         }
         if (!mData.has("id")) {
-            return mPrimaryKey = String.valueOf(mData.get("id").getAsInt());
+            return mPrimaryKey = String.valueOf(getElem("id").getAsInt());
         }
         throw new UnsupportedOperationException("primary key not specific.");
     }
@@ -100,11 +95,8 @@ public class Tuple {
      * Constructors
      */
 
-    /**
-     * @name 建構子
-     *
-     * @{
-     */
+    /**@name 建構子
+     * @{*/
 
     /**
      * Reset tuple by specific data.
@@ -240,21 +232,12 @@ public class Tuple {
      */
     @NonNull
     public Set<Map.Entry<String, String>> entrySet() {
-        //TODO 簡化
         Map<String, String> map = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> p : mData.entrySet()) {
-            JsonElement element = p.getValue();
-            if (!(element instanceof JsonPrimitive)) {
-                map.put(p.getKey(), element.toString());
-                continue;
-            }
-
-            JsonPrimitive primitive = (JsonPrimitive) element;
-            if (primitive.isString()) {
-                map.put(p.getKey(), primitive.getAsString());
-            } else {
-                map.put(p.getKey(), primitive.toString());
-            }
+            JsonPrimitive element = (JsonPrimitive) p.getValue();
+            String key = p.getKey();
+            String value = element.isString() ? element.getAsString() : element.toString();
+            map.put(key, value);
         }
         return map.entrySet();
     }
@@ -275,12 +258,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 {@link String} 型別
      */
     public String get(String key) {
-        JsonElement element = mData.get(key);
-        if (!(element instanceof JsonPrimitive)) {
-            return element.toString();
-        }
-
-        JsonPrimitive primitive = (JsonPrimitive) element;
+        JsonPrimitive primitive = getElem(key);
         if (primitive.isString()) {
             return primitive.getAsString();
         } else {
@@ -296,7 +274,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `boolean` 型別
      */
     public boolean getAsBoolean(String key) {
-        return mData.get(key).getAsBoolean();
+        return getElem(key).getAsBoolean();
     }
 
     /**
@@ -307,7 +285,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `byte` 型別
      */
     public byte getAsByte(String key) {
-        return mData.get(key).getAsByte();
+        return getElem(key).getAsByte();
     }
 
     /**
@@ -318,7 +296,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `char` 型別
      */
     public char getAsChar(String key) {
-        return mData.get(key).getAsCharacter();
+        return getElem(key).getAsCharacter();
     }
 
     /**
@@ -329,7 +307,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `float` 型別
      */
     public float getAsFloat(String key) {
-        return mData.get(key).getAsFloat();
+        return getElem(key).getAsFloat();
     }
 
     /**
@@ -340,7 +318,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `double` 型別
      */
     public double getAsDouble(String key) {
-        return mData.get(key).getAsDouble();
+        return getElem(key).getAsDouble();
     }
 
     /**
@@ -351,7 +329,7 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 `int` 型別
      */
     public int getAsInt(String key) {
-        return mData.get(key).getAsInt();
+        return getElem(key).getAsInt();
     }
 
     /**
@@ -362,9 +340,8 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 {@link Date} 型別
      */
     public Date getAsDate(String key) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
         try {
-            return sdf.parse(mData.get(key).getAsString());
+            return mDateFormatter.parse(get(key));
         } catch (ParseException e) {
             throw new ClassCastException(e.getMessage());
         }
@@ -378,10 +355,9 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 {@link Calendar} 型別
      */
     public Calendar getAsCalendar(String key) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault());
         try {
             Calendar calendar = Calendar.getInstance();
-            calendar.setTime(sdf.parse(mData.get(key).getAsString()));
+            calendar.setTime(mDatetimeFormatter.parse(get(key)));
             return calendar;
         } catch (ParseException e) {
             throw new ClassCastException(e.getMessage());
@@ -405,7 +381,7 @@ public class Tuple {
      * @throws NetworkOnMainThreadException  在主執行緒上使用此函式
      */
     public Tuple getAsTuple(String key) throws IOException {
-        URL url = new URL(mData.get(key).getAsString());
+        URL url = new URL(get(key));
 
         return new Tuple(mTable, getCore()
                 .createConnection(url)
@@ -502,8 +478,7 @@ public class Tuple {
      * @param value 值
      */
     public void put(String key, Date value) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
-        mData.addProperty(key, sdf.format(value.getTime()));
+        mData.addProperty(key, mDateFormatter.format(value.getTime()));
     }
 
     /**
@@ -513,8 +488,7 @@ public class Tuple {
      * @param value 值
      */
     public void put(String key, Calendar value) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault());
-        mData.addProperty(key, sdf.format(value.getTime()));
+        mData.addProperty(key, mDatetimeFormatter.format(value.getTime()));
     }
 
     /**
@@ -531,16 +505,17 @@ public class Tuple {
      * 新增一組鍵值對到容器中。
      *
      * @param key   欄位名
-     * @param value 值
+     * @param filename 檔名
+     * @param image 圖片
      */
     public void put(String key, String filename, Bitmap image) {
-        if (!(filename.endsWith(".png") || filename.endsWith(".PNG"))) {
+        if (!filename.toLowerCase().endsWith(".png")) {
             filename += ".png";
         }
 
         mData.addProperty(key, filename);
 
-        JsonElement element = mData.get(key);
+        JsonElement element = getElem(key);
         mImages.put(element, image);
     }
 
@@ -572,6 +547,12 @@ public class Tuple {
 
     /**@}*/
 
+    /**
+     * Convert data in {@link Tuple} to {@link RequestBody} with `multipart/form-data` encoded.
+     * This is  kernel func of {@link Tuple}.
+     *
+     * @return request body
+     */
     RequestBody toRequestBody() {
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);

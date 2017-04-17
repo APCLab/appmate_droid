@@ -19,9 +19,6 @@ import nctu.fintech.appmate.core.Core;
 /**
  * 指向資料表的連接物件。
  *
- * \note
- * 此物件為指向 `http://<host>/api/<table name>/`
- *
  * \remarks
  * 建立 {@link Table} 實體(instance)時候並不會建立網路連線。
  */
@@ -55,11 +52,11 @@ public class Table {
      * 保護機制。
      * 對於需要頻繁進行操作的資料表，請考慮使用 {@link Table#Table(String, String, String, String)}。
      *
-     * @param host  指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot `api root` 所在位置（ **非** 表格路徑），須包含傳輸阜，如：`http://example:8000/api/`
      * @param table 資料表名稱
      */
-    public Table(@NonNull String api_root, @NonNull String table) {
-        this.parent = new Database(new Core(api_root));
+    public Table(@NonNull String apiRoot, @NonNull String table) {
+        this.parent = new Database(new Core(apiRoot));
         this.name = trimString(table);
         this.mCore = parent
                 .mCore
@@ -69,14 +66,14 @@ public class Table {
     /**
      * 建立一個帶授權的 {@link Table} 實體。
      *
-     * @param host     指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot `api root` 所在位置（ **非** 表格路徑），須包含傳輸阜，如：`http://example:8000/api/`
      * @param username 登入用使用者名稱
      * @param password 登入用密碼
      * @param table    資料表名稱
      */
-    public Table(@NonNull String api_root, @NonNull String table, @NonNull String username, @NonNull String password) {
+    public Table(@NonNull String apiRoot, @NonNull String table, @NonNull String username, @NonNull String password) {
         this.parent = new Database(
-                new Core(api_root)
+                new Core(apiRoot)
                         .useAuth(username, password)
         );
 
@@ -115,24 +112,10 @@ public class Table {
 
     /**@}*/
 
-    /*
-     * Override Object methods
-     */
-
-//    @Override
-//    public String toString() {
-//        return String.format("Table{%s@%s}", _core.tableName, _core.url.getHost());
-//    }
-//
-//    @Override
-//    public boolean equals(Object obj) {
-//        return obj instanceof Table && _core.equals(((Table) obj)._core);
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        return _core.hashCode();
-//    }
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(), "table %s @", name, mCore.root);
+    }
 
     /*
      * 其他功能
@@ -228,19 +211,19 @@ public class Table {
     }
 
     /**
-     * 以 `id` 取得資料表上的特定物件。
+     * 以主鍵取得表格上之物件
      *
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param id 物件 `id`
+     * @param primaryKey 主鍵
      * @return 指定的物件
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
-    public Tuple get(int id) throws IOException {
+    public Tuple get(String primaryKey) throws IOException {
         return new Tuple(this, mCore
-                .cd(String.valueOf(id))
+                .cd(primaryKey)
                 .createConnection()
                 .getResponseAsJson()
         );
@@ -414,22 +397,13 @@ public class Table {
     /**
      * 更新一個資料表上的項目。
      *
-     * 參數 `overwrite` 指示是否進行完全複寫：
-     *
-     * - 若為 `True`，則所有欄位將會重置並覆寫
-     *
-     *  \warning
-     *  進行完全覆寫時，所有必要欄位（schema: `required`）皆需要提供，即使不進行更新
-     *
-     * - 若為 `False`，則僅 `item` 中所帶的欄位會被覆寫
-     *
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param id        要更新的項目 `id`
-     * @param item      要更新的資料
-     * @param overwrite 是否進行完全覆寫
-     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @param primaryKey      要更新的項目的主鍵
+     * @param item                  要更新的資料
+     * @param overwrite          是否進行完全覆寫， `False` 時候僅 `item` 內所帶的欄位會被修正
+     * @throws IOException    資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
     public void update(String primaryKey, Tuple item, boolean overwrite) throws IOException {
@@ -439,20 +413,80 @@ public class Table {
                 .getResponse();
     }
 
+    /**
+     * 更新一個資料表上的項目。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id        要被更新的項目。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
+     * @param item      要更新的資料
+     * @param overwrite 是否進行完全覆寫
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
     public void update(int id, Tuple item, boolean overwrite) throws IOException {
         update(String.valueOf(id), item, overwrite);
     }
 
     /**
-     * 更新一個資料表上的項目。適用於當 `item` 已經帶有 `id` 時。
+     * 更新一個資料表上的項目。
+     * 本函式僅更新 `item` 下帶著的內容。
      *
-     * 本函式將會更新資料表上第 {@link Tuple#getId()} 個項目，且 `overwrite` 設為 `False`
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param primaryKey        要更新的項目的主鍵
+     * @param item      要更新的資料
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void update(String primaryKey, Tuple item) throws IOException {
+        update(primaryKey, item, false);
+    }
+
+    /**
+     * 更新一個資料表上的項目。
+     * 本函式僅更新 `item` 下帶著的內容。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param id        要被更新的項目。在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
+     * @param item      要更新的資料
+     * @throws IOException                  資料表不存在、網路錯誤，或當 `overwrite` 為 `True` 卻缺少部分欄位資料
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     */
+    public void update(int id, Tuple item) throws IOException {
+        update(String.valueOf(id), item, false);
+    }
+
+    /**
+     * 更新一個資料表上的項目。適用於當 `item` 已經帶有主鍵時。
+     * 本函式僅更新 `item` 下帶著的內容。
      *
      * \remarks
      * 此函式會使用網路連線。
      *
      * @param item item to be updated
-     * @throws UnsupportedOperationException `item` 沒有 `id` 欄位
+     * @param overwrite 是否進行完全覆寫
+     * @throws UnsupportedOperationException `item` 沒有主鍵
+     * @throws IOException                  資料表不存在，或網路錯誤
+     * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
+     * @see Table#update(int, Tuple, boolean)
+     */
+    public void update(Tuple item, boolean overwrite)throws IOException {
+        update(item.getPrimaryKey(), item, overwrite);
+    }
+
+    /**
+     * 更新一個資料表上的項目。適用於當 `item` 已經帶有主鍵時。
+     *
+     * \remarks
+     * 此函式會使用網路連線。
+     *
+     * @param item item to be updated
+     * @throws UnsupportedOperationException `item` 沒有主鍵
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      * @see Table#update(int, Tuple, boolean)
@@ -460,6 +494,7 @@ public class Table {
     public void update(Tuple item) throws IOException {
         update(item.getPrimaryKey(), item, false);
     }
+
 
     /**@}*/
 
@@ -478,7 +513,7 @@ public class Table {
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param ids 要被刪除的項目的 `id`
+     * @param ids 要被刪除的項目的 `id`，在 `appmate` 資料庫中多數的物件皆以 `id` 為主鍵。
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
@@ -497,7 +532,7 @@ public class Table {
      * \remarks
      * 此函式會使用網路連線。
      *
-     * @param primaryKeys 要被刪除的項目的 `id`
+     * @param primaryKeys 要被刪除的項目的主鍵
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */

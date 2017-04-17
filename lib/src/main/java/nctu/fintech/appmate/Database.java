@@ -14,17 +14,20 @@ import nctu.fintech.appmate.core.Core;
 /**
  * 指向資料庫的連接物件，本類別適用於須存取多個 {@link Table} 時方便建立連線之用。
  *
- * \note
- * 此物件指向 `http://<host>/api/`
- *
+ * <p>
  * 在一般使用情境下，{@link Database} 並非必須建立的物件，唯當要自同一個資料庫建立多組 {@link Table} 時候，
  * 可利用 {@link Database#getTable(String)} 方法減少寫死參數的使用，
  * 或利用 {@link Database#getTables()} 可進行查詢並取得所有的資料表物件。如：
+ * </p>
  *
  * \code{.java}
  * Database db = new Database("www.example.com:8000", "user", "passw0rd");
  * Table[] tables = db.getTables();
  * \endcode
+ *
+ * <p>
+ * 本架構設計上係以適應Django rest-framework為主，但並不做檢查，期望能適應多數restful api標準。
+ * </p>
  *
  * \remarks
  * 建立 {@link Database} 實體(instance)時候並不會建立網路連線。
@@ -35,6 +38,9 @@ public class Database {
      * Global variables
      */
 
+    /**
+     * core refer to the api root
+     */
     final Core mCore;
 
     /*
@@ -53,21 +59,21 @@ public class Database {
      * 保護機制。
      * 對於需要頻繁進行操作的資料表，請考慮使用 {@link Database#Database(String, String, String)}。
      *
-     * @param host 指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot api root所在位置，須包含傳輸阜，如：`http://example:8000/api/`
      */
-    public Database(@NonNull String api_root) {
-            mCore = new Core(api_root);
+    public Database(@NonNull String apiRoot) {
+            mCore = new Core(apiRoot);
     }
 
     /**
      * 建立一個帶授權的 {@link Database} 實體。
      *
-     * @param host     指派的主機位置，若有，請附上連接阜。如：`www.example.com:8000`
+     * @param apiRoot api root所在位置，須包含傳輸阜，如：`http://example:8000/api/`
      * @param username 登入所使用的使用者名稱
      * @param password 登入所使用的密碼
      */
-    public Database(@NonNull String api_root, @NonNull String username, @NonNull String password) {
-            mCore = new Core(api_root)
+    public Database(@NonNull String apiRoot, @NonNull String username, @NonNull String password) {
+            mCore = new Core(apiRoot)
                     .useAuth(username, password);
     }
 
