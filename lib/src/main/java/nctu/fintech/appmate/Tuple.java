@@ -71,8 +71,8 @@ public class Tuple {
         return mCore;
     }
 
-   private JsonPrimitive getElem(String key) {
-        return (JsonPrimitive) mData.get(key);
+   private JsonElement getElem(String key) {
+        return mData.get(key);
     }
 
     /**
@@ -258,7 +258,12 @@ public class Tuple {
      * @throws ClassCastException 當該值無法被轉型為 {@link String} 型別
      */
     public String get(String key) {
-        JsonPrimitive primitive = getElem(key);
+        JsonElement element = mData.get(key);
+        if (element.isJsonNull()) {
+            return null;
+        }
+
+        JsonPrimitive primitive = element.getAsJsonPrimitive();
         if (primitive.isString()) {
             return primitive.getAsString();
         } else {

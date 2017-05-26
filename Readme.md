@@ -20,7 +20,7 @@ Just add these lines in your `build.gradle`
 
 ```
 dependencies {
-    compile 'nctu.fintech:appmate:1.3.0'
+    compile 'nctu.fintech:appmate:1.3.1'
 }
 ```
 
