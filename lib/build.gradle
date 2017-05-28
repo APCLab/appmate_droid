@@ -15,6 +15,10 @@ android {
         versionCode code
         versionName version
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
