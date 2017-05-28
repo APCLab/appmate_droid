@@ -6,8 +6,6 @@ android:
         - tools
         - platform-tools
         - build-tools-22.0.1
-        # - build-tools-25.0.2
-        - extra-android-m2repository
         - extra-android-m2repository
         - android-22
 
@@ -18,10 +16,7 @@ android:
 jdk: oraclejdk8
 
 env:
-    # - ANDROID_TARGET=25
-    # - ANDROID_TARGET=23
     - ANDROID_TARGET=22
-    # - ANDROID_TARGET=19
 
 # ignore
 branches:
@@ -39,3 +34,7 @@ cache:
     directories:
         - .gradle/caches/
         - .gradle/wrapper/
+
+notifications:
+    slack: nctuimf:fso8u4u2iMWtFrWwrkOdBXL9
+
