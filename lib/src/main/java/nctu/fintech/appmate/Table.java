@@ -286,10 +286,12 @@ public class Table {
      * @throws IOException                  資料表不存在，或網路錯誤
      * @throws NetworkOnMainThreadException 在主執行緒上使用此函式
      */
-    public Tuple[] get(String... filters) throws IOException {
+    public Tuple[] getFiltered(String... filters) throws IOException {
         // parse filters and build query string
         Pattern pattern = Pattern.compile("(\\w+)\\s?(=|==|>|>=|<|<=)\\s?(.+)");
         StringBuilder builder = new StringBuilder("./?");
+
+        boolean isFirst = true;
 
         for (String f : filters) {
             // parse filter
@@ -302,11 +304,12 @@ public class Table {
             }
 
             // retrieve each part
-            String field = URLEncoder.encode(match.group(0), DEFAULT_CHARSET);
-            String value = URLEncoder.encode(match.group(2), DEFAULT_CHARSET);
+            String field = URLEncoder.encode(match.group(1), DEFAULT_CHARSET);
+            String symbol = match.group(2);
+            String value = URLEncoder.encode(match.group(3), DEFAULT_CHARSET);
 
             // select query parameter format by symbol
-            switch (match.group(1)) {
+            switch (symbol) {
                 case "=":
                 case "==":
                     // do nothing
@@ -323,10 +326,12 @@ public class Table {
                 case "<=":
                     field += "__lte";
                     break;
+                default:
+                    continue;
             }
 
             // build query string
-            if (builder.length() > 1) {
+            if (!isFirst) {
                 builder.append("&");
             }
 
@@ -334,6 +339,7 @@ public class Table {
             builder.append(field);
             builder.append("=");
             builder.append(value);
+            isFirst = false;
         }
 
         // downstream & parse

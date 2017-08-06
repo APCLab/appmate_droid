@@ -116,10 +116,10 @@ public class Core {
      * @return url sting
      */
     private String prettifyUrl(String url) {
-        if (!url.endsWith("/")) {
-            url += '/';
+        if (url.endsWith("/") || url.contains("?")) {
+            return url;
         }
-        return url;
+        return url + "/";
     }
 
     /**
