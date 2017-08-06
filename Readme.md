@@ -24,6 +24,6 @@ dependencies {
 }
 ```
 
-[appmate]: /APCLab/appmate
+[appmate]: https://github.com/APCLab/appmate
 [KITKAT]: https://developer.android.com/about/versions/android-4.4.html
 [Here]: https://apclab.github.io/appmate_droid/doc/index.html
