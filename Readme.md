@@ -1,3 +1,5 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 # appmate droid
 
 [![Build Status](https://travis-ci.org/APCLab/appmate_droid.svg?branch=master)](https://travis-ci.org/APCLab/appmate_droid)
